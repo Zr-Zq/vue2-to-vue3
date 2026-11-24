@@ -1,6 +1,39 @@
 # AI 初始化底座：注意事项
 
-迁移第 2 步由 **AI 创建目标工程底座**（`--to`）。脚本 `--scaffold` 只是拷贝仓库内旧模板，**正式迁移请优先让 AI 按下列要求新建**。
+迁移第 2 步由 **AI 创建目标工程底座**（`--to`）。底座目标技术栈固定为 **Vue 3**（优先 Vite）。脚本 `--scaffold` 只是拷贝仓库内旧 Vue2 模板，**正式迁移禁止依赖**。
+
+### 分工（硬规则）
+
+| 谁 | 负责 |
+|----|------|
+| **AI** | 建 **Vue3** 底座；**全部**工程配置；装齐依赖；**能启动**；布局 **与脚本无缝衔接** |
+| **脚本** | analyze / copy / 确定性语法迁移 / AI-TODO / check-refs；**禁止**改 `.env*`、`VUE_APP_*`↔`VITE_*`、`process.env`↔`import.meta.env` |
+
+### 底座完成标准（脚本 copy 之前）
+
+AI 建底座必须达到下列程度，不能只剩空壳：
+
+1. **全部工程配置**已按 Vue3 + Vite 复刻/升级（见下表）。
+2. **`package.json` 齐全**：Vue3 栈 + 源项目需要的运行时/开发依赖。
+3. **已在 `--to` 下装好依赖**（`npm install` / pnpm / yarn）；有 `node_modules`。
+4. **开发服能起来**：`npm run dev`（或底座启动脚本）无缺模块/缺配置错误；业务页可等脚本 copy，但入口/路由桩要可跑。
+5. env、alias、proxy、public、lint/tsconfig、CDN 决策已就位。
+6. **与脚本无缝衔接**：AI 做完后可直接 `v23-migrate --from … --to … --step script`（或默认），无需再补底座、`--scaffold`，或改 env/工程配置。
+
+### 与脚本无缝衔接
+
+底座须符合脚本已有假设，使 copy / import 改写 / pipeline 可直接接入：
+
+| 要求 | 原因 |
+|------|------|
+| 根目录有 `package.json`（最好还有 `vite.config.*` 与 `jsconfig.json` / `tsconfig.json`） | `looksLikeProject(--to)` 必须为真，否则 migrate 会停在「等 AI 底座」 |
+| 默认应用树在 **`src/`**（与源 `--src` / `--dest-src` 一致） | 脚本 copy 按相对路径；怪异布局要额外参数 |
+| 别名 **`@` → `src`**（源用过 `~` 则一并）；`jsconfig`/`tsconfig` paths 与 Vite 一致 | `ingest` / `rewrite-imports` 按**底座** alias 解析改写 |
+| 根级工程文件只由 AI 准备（env、Vite、package.json、lint…） | 脚本**不**迁 env/工程配置——底座里必须已正确 |
+| 桩 `src/main.js` / router 可被 copy **覆盖** | 不要做成脚本无法叠上去的布局 |
+| 不把缺依赖、缺 alias、缺 proxy 留给脚本 | 交接 = AI 做完 → 脚本 copy+pipeline → 仅语法/语义 AI-TODO |
+
+若源不是 `src` 根，用匹配的 `--dest-src` 并在 `.v23/scaffold-notes.md` 写明；默认仍为 `src/`。
 
 ## 构建工具：优先 Vite
 
@@ -8,10 +41,12 @@
 - **不要默认再用 webpack / vue-cli**，除非用户明确要求，或源项目强依赖短期只能在 webpack 预览。
 - 推荐依赖方向：`vue@3`、`vue-router@4`、按需 `pinia` 或 `vuex@4`、UI 按源项目选型（如 Element Plus）。
 - 入口：`index.html` + `src/main.js`（或 `.ts`），`resolve.alias['@'] → src`。
+- **环境变量**：对照源 `.env*`，由 AI 写成 `VITE_*`；业务代码读 `import.meta.env`（不要等脚本改）。
+- **装依赖**：AI 自己跑包管理器安装，不要把「依赖以后再说」留给脚本或用户。
 
 ## 复刻源项目「全部工程配置」
 
-建底座时，AI 必须对照 **迁移源（`--from`）** 把工程级配置迁到 / 复刻进底座，不能只起一个空 Vite 壳。
+建底座时，AI 必须对照 **迁移源（`--from`）** 把**全部**工程级配置迁到 / 复刻进底座，不能只起一个空 Vite 壳，然后装依赖并确认能启动。
 
 ### 必扫并处理的配置面
 
@@ -19,7 +54,7 @@
 |--------------|------------|
 | `package.json` dependencies / scripts | 升到 Vue3 生态等价包，保留业务脚本意图（build/lint/analyz 等） |
 | `vue.config.js` / `webpack.config.*` | 转成 `vite.config`：alias、proxy、publicPath、define、静态目录、压缩等 |
-| `.env*` / `process.env.VUE_APP_*` | 改为 `VITE_*` + `import.meta.env`（或兼容层），变量名清单对齐 |
+| `.env*` / `process.env.VUE_APP_*` | **仅 AI 处理**（脚本禁止改 env）：改为 `VITE_*` + `import.meta.env`，变量名清单对齐 |
 | `babel.config.*` / `.browserslistrc` | Vite 下多为默认；特殊 polyfill/插件要记入底座或 AI-TODO |
 | `postcss` / `sass` / `less` 配置 | 在 Vite 中复现同名能力 |
 | `eslint` / `prettier` / `editorconfig` | 拷到底座并按 Vue3 语法调整 |
@@ -156,14 +191,16 @@ ignoreWarnings: [
 
 ## AI 自检清单
 
-建完底座后确认：
+建完底座后确认（除注明外均为必做）：
 
-1. [ ] 使用 **Vite**（除非用户另有要求）
-2. [ ] 源项目 **工程配置已复刻/等价迁移**（env、alias、proxy、lint、public、脚本等）
-3. [ ] **CDN**：框架类已 npm 化或显式 external；纯 HTML/JS 无关 CDN 可保留
-4. [ ] 根级 **`script/` / `test/` 等旁路目录**已拷入底座；非 Vue 栈可不改写
-5. [ ] `npm run dev` 可启动
-6. [ ] `@` → `src` alias 已配
-7. [ ] 未误删源项目文件
-8. [ ] 未把 webpack 多 style 误报当成迁移失败
-9. [ ] （建议）写下 `.v23/scaffold-notes.md` 记录配置、CDN、旁路目录决策
+1. [ ] 使用 **Vite + Vue3**（除非用户另有要求）
+2. [ ] 源项目 **全部工程配置**已复刻/等价迁移（env、alias、proxy、lint、public、脚本等）
+3. [ ] **依赖已写全并安装**（`npm install` / pnpm / yarn；栈所需模块不缺）
+4. [ ] **`npm run dev`（或启动脚本）实际能起来**，无配置/模块错误
+5. [ ] **与脚本无缝衔接**：`looksLikeProject` 通过；`src/`（或已文档化 dest-src）；`@` alias；不留给脚本补 env/工程配置
+6. [ ] **CDN**：框架类已 npm 化或显式 external；纯 HTML/JS 无关 CDN 可保留
+7. [ ] 根级 **`script/` / `test/` 等旁路目录**已拷入底座；非 Vue 栈可不改写
+8. [ ] `@` → `src` alias 已配（且 paths 与 Vite 一致）
+9. [ ] 未误删源项目文件
+10. [ ] 未把 webpack 多 style 误报当成迁移失败
+11. [ ] （建议）写下 `.v23/scaffold-notes.md` 记录配置、CDN、旁路、非默认 dest-src

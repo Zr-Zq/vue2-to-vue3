@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * 主流程：分析(写入项目 .v23) → 流水线 → 清理 .v23
+ * Main flow: analyze (write project .v23) → pipeline → clean .v23
  */
 const fs = require('fs')
 const path = require('path')
@@ -19,18 +19,18 @@ const { CANNOT_FULLY_AUTO } = require('../src/pipeline/plugins/risk-summary')
 function printHelp() {
   console.log(`Usage: v23-run <projectRoot> [options]
 
-完整流程：
-  1. 图分析 → <project>/.v23/graph.json
-  2. 前置风险流水线 + 迁移流水线（均可插拔）
-  3. 默认清理 .v23（风险「无法完整自动」清单会打印到控制台）
+Full flow:
+  1. Graph analysis → <project>/.v23/graph.json
+  2. Preflight risk pipeline + migration pipeline (both pluggable)
+  3. Clean .v23 by default (cannot-fully-auto risk list is printed to console)
 
 Options:
-  --keep            结束后保留 .v23（含 risks.json）
-  --write           写回源码（含风险点 AI-TODO 注释）
-  --annotate        迁移插件 mode=annotate（演示改写，不同于 AI-TODO）
-  --order <a,b,c>   仅覆盖迁移流水线顺序
-  --skip-pipeline   只分析+清理
-  --clean-only      只清理项目 .v23 与仓库 output
+  --keep            Keep .v23 after finish (includes risks.json)
+  --write           Write back to sources (including risk AI-TODO comments)
+  --annotate        Migration plugins mode=annotate (demo rewrite; not the same as AI-TODO)
+  --order <a,b,c>   Override migration pipeline order only
+  --skip-pipeline   Analyze + clean only
+  --clean-only      Only clean project .v23 and repo output
   -h, --help
 `)
 }
@@ -71,27 +71,27 @@ async function main() {
     const root = args.projectRoot ? path.resolve(args.projectRoot) : null
     if (root) {
       const ok = cleanProjectWorkDir(root)
-      console.log(ok ? '已清理 ' + projectWorkDir(root) : '无 .v23 可清理: ' + root)
+      console.log(ok ? 'Cleaned ' + projectWorkDir(root) : 'No .v23 to clean: ' + root)
     }
-    console.log('已清理仓库 output:', cleanOutputRoot())
+    console.log('Cleaned repo output:', cleanOutputRoot())
     return
   }
 
   const projectRoot = path.resolve(args.projectRoot)
   if (!fs.existsSync(projectRoot)) {
-    console.error('项目不存在:', projectRoot)
+    console.error('Project not found:', projectRoot)
     process.exit(1)
   }
 
-  console.log('=== 1/3 前置分析 →', projectWorkDir(projectRoot))
+  console.log('=== 1/3 Preflight analysis →', projectWorkDir(projectRoot))
   const t0 = Date.now()
   const analyzed = writeAnalyze(projectRoot)
   console.log(
-    `分析完成 ${Date.now() - t0}ms · graph=${analyzed.graphPath} · files=${analyzed.graph.stats.fileCount}`
+    `Analysis done ${Date.now() - t0}ms · graph=${analyzed.graphPath} · files=${analyzed.graph.stats.fileCount}`
   )
 
   if (!args.skipPipeline) {
-    console.log('=== 2/3 流水线')
+    console.log('=== 2/3 Pipeline')
     const config = loadPipelineConfig(projectRoot)
     if (args.order && args.order.length) {
       config.pipeline = args.order.map((name) => ({ name, enabled: true }))
@@ -105,7 +105,7 @@ async function main() {
       })
     }
     if (args.write) config.dryRun = false
-    // 已有 graph，流水线不必再 build；仍走 preflight=false + 传入 graph
+    // Graph already built; skip rebuild; keep preflight=false and pass graph
     config.preflight = false
 
     const t1 = Date.now()
@@ -135,7 +135,7 @@ async function main() {
       'utf8'
     )
     console.log(
-      `流水线完成 ${Date.now() - t1}ms · changed=${result.stats.changed} · report=${reportPath}`
+      `Pipeline done ${Date.now() - t1}ms · changed=${result.stats.changed} · report=${reportPath}`
     )
 
     const risksPath = path.join(projectWorkDir(projectRoot), 'risks.json')
@@ -143,7 +143,7 @@ async function main() {
       const risksDoc = JSON.parse(fs.readFileSync(risksPath, 'utf8'))
       const s = risksDoc.summary || {}
       console.log(
-        '风险汇总: total=' +
+        'Risk summary: total=' +
           s.total +
           ' · yes/partial/no=' +
           (s.byAuto && s.byAuto.yes) +
@@ -152,8 +152,8 @@ async function main() {
           '/' +
           (s.byAuto && s.byAuto.no)
       )
-      console.log('按类:', JSON.stringify(s.byCategory || {}))
-      // 备份到仓库 output，避免清理 .v23 后丢失
+      console.log('By category:', JSON.stringify(s.byCategory || {}))
+      // Back up to repo output so data survives .v23 cleanup
       const backupDir = outputPath(path.basename(projectRoot) + '-risks')
       fs.mkdirSync(backupDir, { recursive: true })
       fs.copyFileSync(risksPath, path.join(backupDir, 'risks.json'))
@@ -161,24 +161,24 @@ async function main() {
       if (fs.existsSync(mdSrc)) {
         fs.copyFileSync(mdSrc, path.join(backupDir, 'risks-cannot-auto.md'))
       }
-      console.log('风险报告已备份:', backupDir)
+      console.log('Risk report backed up:', backupDir)
     }
   } else {
-    console.log('=== 2/3 跳过流水线')
+    console.log('=== 2/3 Pipeline skipped')
   }
 
-  console.log('=== 无法完整自动处理（需你方想办法）===')
+  console.log('=== Cannot fully auto-handle (needs manual follow-up) ===')
   CANNOT_FULLY_AUTO.forEach((c, i) => {
     console.log(i + 1 + '. [' + c.category + '] ' + c.title)
     console.log('   ' + c.reason)
   })
 
-  console.log('=== 3/3 清理')
+  console.log('=== 3/3 Cleanup')
   if (args.keep) {
-    console.log('保留工作目录:', projectWorkDir(projectRoot))
+    console.log('Keeping work dir:', projectWorkDir(projectRoot))
   } else {
     cleanProjectWorkDir(projectRoot)
-    console.log('已删除', projectWorkDir(projectRoot))
+    console.log('Removed', projectWorkDir(projectRoot))
   }
 }
 

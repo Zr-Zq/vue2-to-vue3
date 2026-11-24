@@ -1,7 +1,7 @@
 const path = require('path')
 
 /**
- * 单文件在流水线中的上下文（上一阶段输出 = 下一阶段输入）
+ * Per-file pipeline context (previous stage output = next stage input).
  */
 function createFileContext(input) {
   const file = {
@@ -23,12 +23,12 @@ function createFileContext(input) {
   return {
     file,
     project: input.project,
-    /** 插件写回内容；自动记变更来源 */
+    /** Plugin writes content back; change source is recorded automatically */
     setContent(next, pluginName) {
       const text = next == null ? '' : String(next)
       if (text !== file.content) {
         file.content = text
-        file.ast = null // 内容变了，旧 AST 失效
+        file.ast = null // content changed; drop stale AST
         if (pluginName && !file.changedBy.includes(pluginName)) {
           file.changedBy.push(pluginName)
         }
@@ -85,7 +85,7 @@ function createProjectContext(opts) {
     dryRun: !!opts.dryRun,
     config: opts.config || {},
     graph: opts.graph || null,
-    shared: Object.create(null), // 插件间共享（如预分析结果）
+    shared: Object.create(null), // cross-plugin shared state (e.g. pre-analysis)
     stats: {
       files: 0,
       changed: 0,

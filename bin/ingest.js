@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 /**
- * 将待迁移源文件摄入 AI 底座工程，并按底座路径配置重写 import
+ * Ingest source files into the AI migration base and rewrite imports
+ * to match the base project's path aliases.
  *
- *   node bin/ingest.js --from <源文件|目录> --to <底座内目标路径> [--base <底座根>] [--source-root <源根>] [--dry-run]
+ *   node bin/ingest.js --from <srcFile|dir> --to <baseTargetPath> [--base <baseRoot>] [--source-root <srcRoot>] [--dry-run]
  */
 const fs = require('fs')
 const path = require('path')
@@ -11,17 +12,18 @@ const { ingestFiles } = require('../src/ingest')
 function printHelp() {
   console.log(`Usage: v23-ingest --from <path> --to <path> [options]
 
-把业务源码拷进迁移底座，并按底座的 jsconfig/webpack alias 自动改写引入路径。
+Copy business source into the migration base and rewrite imports using
+the base project's jsconfig/webpack aliases.
 
 Required:
-  --from <path>         源文件或目录（Vue2 业务工程内）
-  --to <path>           输出路径：单文件目标，或目录（from 为目录时）
+  --from <path>         Source file or directory (Vue2 app)
+  --to <path>           Output path: single-file target, or directory (when --from is a dir)
 
 Options:
-  --base <dir>          底座项目根（默认从 --to 向上自动检测）
-  --source-root <dir>   源工程根（默认从 --from 向上自动检测）
-  --dry-run             只打印改写结果，不写盘
-  --no-backup           覆盖已存在文件时不备份（默认会备份到 <base>/.v23/backup/）
+  --base <dir>          Base project root (default: auto-detect upward from --to)
+  --source-root <dir>   Source project root (default: auto-detect upward from --from)
+  --dry-run             Print rewrite results only; do not write
+  --no-backup           Do not back up existing files on overwrite (default: <base>/.v23/backup/)
   -h, --help
 
 Examples:
@@ -69,19 +71,19 @@ function main() {
     backup: args.backup,
   })
 
-  console.log('源工程根:', result.sourceRoot)
-  console.log('底座根:', result.baseRoot)
+  console.log('Source root:', result.sourceRoot)
+  console.log('Base root:', result.baseRoot)
   if (result.backedUpCount) {
-    console.log('已备份覆盖文件:', result.backedUpCount, '→', result.backupDir)
+    console.log('Backed up overwritten files:', result.backedUpCount, '→', result.backupDir)
   }
   console.log(
-    '底座 alias:',
+    'Base aliases:',
     Object.keys(result.baseAlias)
       .map((k) => k + '→' + result.baseAlias[k])
       .join(', ')
   )
   console.log('dryRun:', result.dryRun)
-  console.log('文件数:', result.files.length)
+  console.log('Files:', result.files.length)
 
   result.files.forEach((f) => {
     console.log(`  ${f.from}  →  ${f.to}`)
@@ -94,7 +96,7 @@ function main() {
       .filter((c) => !c.to && c.reason !== 'alias-passthrough')
       .slice(0, 5)
       .forEach((c) => {
-        console.log(`    未改写 "${c.from}" [${c.reason}]`)
+        console.log(`    unchanged "${c.from}" [${c.reason}]`)
       })
   })
 
@@ -103,7 +105,7 @@ function main() {
   const reportPath = path.join(reportDir, 'ingest-report.json')
   if (!args.dryRun) {
     fs.writeFileSync(reportPath, JSON.stringify(result, null, 2), 'utf8')
-    console.log('报告:', reportPath)
+    console.log('Report:', reportPath)
   }
 }
 

@@ -5,7 +5,7 @@ const OPTION_KEYS = ['data', 'methods', 'computed', 'watch', 'mixins', 'props', 
 
 module.exports = createPlugin({
   name: 'risk-setup-mix',
-  description: '检出 setup 与 Options API 混用',
+  description: 'Detect setup mixed with Options API',
   version: '0.1.0',
   match(ctx) {
     return ctx.file.kind === 'vue' || /setup\s*\(/.test(ctx.file.content)
@@ -31,12 +31,12 @@ module.exports = createPlugin({
         auto: 'partial',
         file: ctx.file.path,
         message:
-          'setup 与 Options 混用（' +
+          'setup mixed with Options (' +
           Array.from(optionHits).join(',') +
           (hasScriptSetup ? ',script-setup' : '') +
           '）',
         evidence: Array.from(optionHits).join(','),
-        hint: '需约定迁移策略：继续混用兼容 或 全 Composition',
+        hint: 'Decide strategy: keep mixed compat or full Composition',
       })
     } else if (hasSetupFn || hasScriptSetup) {
       pushRisk(api.project, {
@@ -45,7 +45,7 @@ module.exports = createPlugin({
         level: 'info',
         auto: 'yes',
         file: ctx.file.path,
-        message: hasScriptSetup ? '使用 script setup' : '使用 setup()（未见 Options 混用）',
+        message: hasScriptSetup ? 'uses script setup' : 'uses setup() (no Options mix seen)',
       })
     }
   },

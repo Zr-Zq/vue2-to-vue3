@@ -1,13 +1,13 @@
 const fs = require('fs')
 const path = require('path')
 
-/** 仓库根目录（vue2-to-vue3/） */
+/** Repo root (vue2-to-vue3/) */
 const REPO_ROOT = path.resolve(__dirname, '../..')
 
-/** 人工查阅用报告（可选）：vue2-to-vue3/output */
+/** Optional human-readable reports: vue2-to-vue3/output */
 const OUTPUT_ROOT = path.join(REPO_ROOT, 'output')
 
-/** 目标项目内工作目录名：后续流水线要读的分析产物放这里，全流程结束清理 */
+/** Work dir name inside target project: analysis artifacts for the pipeline; cleaned after full run */
 const PROJECT_WORK_DIRNAME = '.v23'
 
 /**
@@ -17,7 +17,7 @@ function outputPath(...parts) {
   return path.join(OUTPUT_ROOT, ...parts)
 }
 
-/** 项目内工作目录：<project>/.v23 */
+/** In-project work directory: <project>/.v23 */
 function projectWorkDir(projectRoot) {
   return path.join(path.resolve(projectRoot), PROJECT_WORK_DIRNAME)
 }
@@ -33,7 +33,7 @@ function projectPipelineReportPath(projectRoot) {
 function ensureProjectWorkDir(projectRoot) {
   const dir = projectWorkDir(projectRoot)
   fs.mkdirSync(dir, { recursive: true })
-  // 避免被业务构建/提交误用
+  // Avoid accidental use by app builds / commits
   const gitignore = path.join(dir, '.gitignore')
   if (!fs.existsSync(gitignore)) {
     fs.writeFileSync(gitignore, '*\n', 'utf8')
@@ -41,7 +41,7 @@ function ensureProjectWorkDir(projectRoot) {
   return dir
 }
 
-/** 清理项目内 .v23 工作目录 */
+/** Remove in-project .v23 work directory */
 function cleanProjectWorkDir(projectRoot) {
   const dir = projectWorkDir(projectRoot)
   if (fs.existsSync(dir)) {
@@ -51,7 +51,7 @@ function cleanProjectWorkDir(projectRoot) {
   return false
 }
 
-/** 清理仓库 output/ */
+/** Clean repo output/ */
 function cleanOutputRoot() {
   if (fs.existsSync(OUTPUT_ROOT)) {
     fs.rmSync(OUTPUT_ROOT, { recursive: true, force: true })

@@ -3,13 +3,13 @@ const { pushRisk, loadScripts, locOf, traverse, t } = require('../risk/helpers')
 
 module.exports = createPlugin({
   name: 'risk-globals-extend',
-  description: '检出 Vue.extend / 手动 $mount / Vue.mixin / Vue.config',
+  description: 'Detect Vue.extend / manual $mount / Vue.mixin / Vue.config',
   version: '0.1.0',
   match(ctx) {
     return /Vue\.(extend|mixin|config)|\$mount\s*\(/.test(ctx.file.content)
   },
   async transform(ctx, api) {
-    // 若图里已有全局登记，附加引用
+    // If the graph already has global registrations, attach references
     const g = api.project.graph
     if (g && g.globalIndex) {
       g.globalIndex.forEach((item) => {
@@ -20,7 +20,7 @@ module.exports = createPlugin({
           item.kind === 'vue.extend' ||
           item.kind === 'vue.prototype'
         ) {
-          // vue.extend 已由 migrate-extend 脚本处理，不进危险侧
+          // vue.extend already handled by migrate-extend; not treated as a risk
           if (item.kind === 'vue.extend') {
             pushRisk(api.project, {
               id: 'globals.' + item.kind,
@@ -28,9 +28,9 @@ module.exports = createPlugin({
               level: 'info',
               auto: 'yes',
               file: ctx.file.path,
-              message: '全局登记 Vue.extend（脚本 → defineComponent）',
+              message: 'Global Vue.extend (script → defineComponent)',
               evidence: item.api,
-              hint: '已由 migrate-extend 确定性处理',
+              hint: 'Handled deterministically by migrate-extend',
             })
             return
           }
@@ -40,9 +40,9 @@ module.exports = createPlugin({
             level: item.kind === 'vue.mixin' ? 'block' : 'warn',
             auto: item.kind === 'vue.prototype' ? 'partial' : 'no',
             file: ctx.file.path,
-            message: '全局副作用登记: ' + item.api,
+            message: 'Global side-effect registration: ' + item.api,
             evidence: item.api,
-            hint: '来自前置 graph；迁移需改 app 级 API',
+            hint: 'From preflight graph; migrate to app-level APIs',
           })
         }
       })
@@ -63,9 +63,9 @@ module.exports = createPlugin({
               level: 'info',
               auto: 'yes',
               file: ctx.file.path,
-              message: 'Vue.extend(...)（脚本 → defineComponent）',
+              message: 'Vue.extend(...) (script → defineComponent)',
               loc: locOf(p.node),
-              hint: '已由 migrate-extend 确定性处理',
+              hint: 'Handled deterministically by migrate-extend',
             })
           }
           if (
@@ -78,9 +78,9 @@ module.exports = createPlugin({
               level: 'info',
               auto: 'yes',
               file: ctx.file.path,
-              message: '手动 $mount()（脚本 → createApp().mount）',
+              message: 'Manual $mount() (script → createApp().mount)',
               loc: locOf(p.node),
-              hint: '已由 migrate-mount 确定性处理',
+              hint: 'Handled deterministically by migrate-mount',
             })
           }
         },

@@ -1,5 +1,5 @@
 /**
- * 确定性 migrate 多轮压测：各种写法 + 幂等 + 合成样本
+ * Deterministic migrate stress: varied patterns + idempotence + synth cases
  *
  *   node test/auto-migrate.stress.js
  *   node test/auto-migrate.stress.js --rounds 20 --synth 200
@@ -48,7 +48,7 @@ function assertCleanJs(code, label) {
 
 function assertCleanHtml(code, label) {
   const c = stripNoise(code)
-  // 只认「指令形态」：:prop.sync= / @evt.native / v-on="$listeners"
+  // Only directive forms: :prop.sync= / @evt.native / v-on="$listeners"
   assert.ok(!/:[A-Za-z_][\w.-]*\.sync\s*=/.test(c), label + ': :prop.sync left')
   assert.ok(!/v-bind:[A-Za-z_][\w.-]*\.sync\s*=/.test(c), label + ': v-bind:.sync left')
   assert.ok(!/@[A-Za-z_][\w.-]*\.native\b/.test(c), label + ': @evt.native left')
@@ -61,7 +61,7 @@ function assertCleanHtml(code, label) {
 }
 
 function assertCleanCss(code, label) {
-  // 只在 style 规则里查，避免文案里的 >>>
+  // Only scan inside style blocks; avoid >>> in prose
   const styles = String(code || '').match(/<style\b[^>]*>[\s\S]*?<\/style>/gi) || [code]
   styles.forEach((block, i) => {
     const c = stripNoise(block)

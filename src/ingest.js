@@ -8,7 +8,7 @@ const { toPosixRel } = require('./resolve')
 const { ensureBackupBatch, backupIfExists } = require('./backup')
 
 /**
- * 将源工程文件摄入到底座工程，并按底座路径配置重写 import
+ * Ingest source project files into the scaffold project and rewrite imports using scaffold path config
  *
  * @param {{
  *   from: string|string[],
@@ -19,11 +19,11 @@ const { ensureBackupBatch, backupIfExists } = require('./backup')
  *   backup?: boolean,
  *   backupStamp?: string,
  * }} options
- * - from: 源文件或目录
- * - to: 输出文件路径，或输出目录（from 为目录时）
- * - baseRoot: 底座根；默认从 to 向上自动检测
- * - sourceRoot: 源工程根；默认从 from 向上自动检测
- * - backup: 覆盖已存在目标前先备份（默认 true）
+ * - from: source file(s) or directory
+ * - to: output file path, or output directory (when from is a directory)
+ * - baseRoot: scaffold root; default: walk up from to
+ * - sourceRoot: source project root; default: walk up from from
+ * - backup: back up before overwriting existing targets (default true)
  */
 function ingestFiles(options) {
   const opts = options || {}
@@ -40,17 +40,17 @@ function ingestFiles(options) {
     baseRoot = detectProjectRoot(toInput)
   }
   if (!baseRoot) {
-    // to 是新文件尚不存在时，从其父目录向上找
+    // When to is a new file that does not exist yet, walk up from its parent
     baseRoot = detectProjectRoot(path.dirname(toInput))
   }
   if (!baseRoot) {
-    throw new Error('无法检测底座项目根目录，请传 --base')
+    throw new Error('Cannot detect scaffold project root; pass --base')
   }
 
   const sourceConfig = loadProjectConfig(sourceRoot)
   const baseConfig = loadProjectConfig(baseRoot)
 
-  // 收集要复制的文件列表：{ fromAbs, toAbs }
+  // Collect file pairs to copy: { fromAbs, toAbs }
   const pairs = []
   const fromIsDir = fromInputs.length === 1 && fs.existsSync(fromInputs[0]) && fs.statSync(fromInputs[0]).isDirectory()
   const toIsDirHint = opts.toDir || (fromIsDir && !/\.(vue|jsx?|tsx?|mjs|cjs)$/i.test(toInput))
@@ -69,7 +69,7 @@ function ingestFiles(options) {
     })
   } else {
     fromInputs.forEach((abs) => {
-      if (!fs.existsSync(abs)) throw new Error('源文件不存在: ' + abs)
+      if (!fs.existsSync(abs)) throw new Error('Source file not found: ' + abs)
       let toAbs = toInput
       if (fromInputs.length > 1 || fs.existsSync(toInput) && fs.statSync(toInput).isDirectory()) {
         toAbs = path.join(toInput, path.basename(abs))
@@ -78,7 +78,7 @@ function ingestFiles(options) {
     })
   }
 
-  // 路径映射表：源绝对路径 → 目标绝对路径
+  // Path map: source absolute path → destination absolute path
   const pathMap = new Map()
   pairs.forEach((p) => pathMap.set(path.normalize(p.fromAbs), path.normalize(p.toAbs)))
 
@@ -125,7 +125,7 @@ function ingestFiles(options) {
     })
   })
 
-  // 便于收尾 check-refs --files-from
+  // For follow-up check-refs --files-from
   if (!opts.dryRun) {
     try {
       const work = path.join(baseRoot, '.v23')

@@ -4,7 +4,7 @@ const { applySfcTransforms } = require('../../transform/apply-sfc')
 
 module.exports = createPlugin({
   name: 'migrate-directive-hooks',
-  description: '自定义指令钩子 bind/inserted/... → beforeMount/mounted/...',
+  description: 'Directive hooks bind/inserted/... → beforeMount/mounted/...',
   version: '0.1.0',
   defaults: { enabled: true },
   match(ctx, api) {
@@ -22,7 +22,7 @@ module.exports = createPlugin({
         ctx.report({
           level: 'info',
           plugin: 'migrate-directive-hooks',
-          message: 'directive-hooks 改写 ×' + result.changes.length,
+          message: 'directive-hooks rewrites ×' + result.changes.length,
         })
       }
       return
@@ -33,7 +33,7 @@ module.exports = createPlugin({
       ctx.report({
         level: 'info',
         plugin: 'migrate-directive-hooks',
-        message: 'directive-hooks 改写 ×' + result.changes.length,
+        message: 'directive-hooks rewrites ×' + result.changes.length,
       })
     }
   },

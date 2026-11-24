@@ -28,8 +28,9 @@ const migrateFunctional = require('./migrate-functional')
 const migrateMount = require('./migrate-mount')
 const migrateExtend = require('./migrate-extend')
 const migrateChildren = require('./migrate-children')
+const migrateInstanceEvents = require('./migrate-instance-events')
 
-/** 确定性脚本改写：放在风险检测之前，改完后这些不再当「危险」 */
+/** Deterministic script rewrites: run before risk detection so these are no longer "risks" */
 const migratePlugins = [
   migrateHtml,
   migrateRenderH,
@@ -41,6 +42,7 @@ const migratePlugins = [
   migrateExtend,
   migrateMount,
   migrateChildren,
+  migrateInstanceEvents,
 ]
 
 const riskPlugins = [
@@ -89,6 +91,7 @@ module.exports = {
   migrateExtend,
   migrateMount,
   migrateChildren,
+  migrateInstanceEvents,
   scss,
   less,
   typescript,

@@ -4,11 +4,11 @@ const { migrateRenderH } = require('../../transform/js-render-h')
 const { applySfcTransforms } = require('../../transform/apply-sfc')
 
 /**
- * render(h) 自动改写（单独可测）
+ * Automatic rewrite of render(h) (independently testable).
  */
 module.exports = createPlugin({
   name: 'migrate-render-h',
-  description: '自动改写 render(h) → h import + 去参 / $scopedSlots',
+  description: 'Rewrite render(h) → h import + drop arg / $scopedSlots',
   version: '0.1.0',
   defaults: { enabled: true },
   match(ctx, api) {
@@ -30,7 +30,7 @@ module.exports = createPlugin({
         ctx.report({
           level: 'info',
           plugin: 'migrate-render-h',
-          message: 'render-h 改写 ×' + result.changes.length,
+          message: 'render-h rewrites ×' + result.changes.length,
         })
       }
       return
@@ -41,7 +41,7 @@ module.exports = createPlugin({
       ctx.report({
         level: 'info',
         plugin: 'migrate-render-h',
-        message: 'render-h 改写 ×' + result.changes.length,
+        message: 'render-h rewrites ×' + result.changes.length,
       })
     }
   },

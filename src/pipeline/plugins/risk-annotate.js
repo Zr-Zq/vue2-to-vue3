@@ -3,14 +3,14 @@ const { loadScripts, ensureRiskStore } = require('../risk/helpers')
 const { annotateContent, TAG } = require('../risk/annotate')
 
 /**
- * 对已识别风险：不改逻辑，只插入
- *   /* 迁移脚本注释: AI-TODO [category] ... *\/
- * 或模板 <!-- 迁移脚本注释: AI-TODO ... -->
- * 交给 AI 后续处理。
+ * For detected risks: do not change logic; only insert
+ *   /* AI-TODO: [category] ... *\/
+ * or in templates <!-- AI-TODO: ... -->
+ * for AI follow-up.
  */
 module.exports = createPlugin({
   name: 'risk-annotate',
-  description: '给风险点打 AI-TODO 注释，不改业务逻辑',
+  description: 'Annotate risks with AI-TODO; do not change business logic',
   version: '0.1.0',
   defaults: {
     enabled: true,
@@ -24,7 +24,7 @@ module.exports = createPlugin({
   },
   async transform(ctx, api) {
     if (api.options && api.options.enabled === false) return
-    // auto=yes 的项已由脚本确定性处理，不再打 AI-TODO
+    // auto=yes items were handled deterministically by scripts; skip AI-TODO
     const risks = (api.project.shared.risks || []).filter(
       (r) => r.file === ctx.file.path && r.auto !== 'yes'
     )
@@ -42,12 +42,12 @@ module.exports = createPlugin({
       ctx.report({
         level: 'info',
         plugin: 'risk-annotate',
-        message: '插入 AI-TODO 注释 ×' + result.inserted,
+        message: 'inserted AI-TODO comments ×' + result.inserted,
       })
     }
   },
   async teardown(project, api) {
-    // setup 阶段产生的风险（如 mixin-collision）可能没有走过 transform：补一轮
+    // Risks from setup (e.g. mixin-collision) may not have gone through transform: note only
     ensureRiskStore(project)
     const byFile = Object.create(null)
     ;(project.shared.risks || []).forEach((r) => {
@@ -56,8 +56,8 @@ module.exports = createPlugin({
       byFile[r.file].push(r)
     })
 
-    // 仅统计；文件级已在 transform 处理。setup-only 风险若 file 指向 mixin 源文件，
-    // 该文件若已被扫描过则已标注；未 match 到的在此无法再跑 fileCtx。
+    // Stats only; per-file handled in transform. Setup-only risks whose file points at a
+    // mixin source: already annotated if that file was scanned; unmatched cannot re-run fileCtx here.
     project.shared.annotateTag = TAG
     if (api && api.log) api.log('risk-annotate teardown ok')
   },

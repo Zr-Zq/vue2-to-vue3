@@ -9,12 +9,12 @@ const {
 } = require('../../handoff')
 
 /**
- * JS 流：options.filters → methods。
- * 可独立跑；也可消费 HTML 流写入的 handoff。找不到 filters 则 skip（不报错）。
+ * JS stream: options.filters → methods.
+ * Can run alone or consume HTML-stream handoff. Skip (no error) if filters not found.
  */
 module.exports = createPlugin({
   name: 'migrate-filters',
-  description: 'JS 流：options.filters → methods（消费 HTML handoff；找不到则 skip）',
+  description: 'JS stream: options.filters → methods (consume HTML handoff; skip if missing)',
   version: '0.2.0',
   defaults: { enabled: true, stream: 'js' },
   match(ctx, api) {
@@ -73,18 +73,18 @@ module.exports = createPlugin({
           file: ctx.file.path,
           kind: 'filters-to-methods',
           status: 'done',
-          note: 'filters 已并入 methods',
+          note: 'filters merged into methods',
         })
       } else {
-        // HTML 交了班，但 script 里已无 filters（或已被人改过）→ skip
+        // HTML handed off, but script has no filters (or already edited) → skip
         resolveHandoffItem(ctx.project, {
           file: ctx.file.path,
           kind: 'filters-to-methods',
           status: 'skipped',
           note:
             expected.length > 0
-              ? 'JS 侧未找到 options.filters（期望: ' + expected.join(', ') + '），忽略'
-              : 'JS 侧未找到 options.filters，忽略',
+              ? 'JS side: options.filters not found (expected: ' + expected.join(', ') + '), skipped'
+              : 'JS side: options.filters not found, skipped',
         })
         ctx.report({
           level: 'info',

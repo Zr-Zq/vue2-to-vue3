@@ -6,26 +6,26 @@ const { decomposeVue, isRealJsScript } = require('./sfc-parts')
 const { resolveImport, toPosixRel } = require('./resolve')
 
 /**
- * 把绝对路径尽量写成底座项目的 alias 或相对路径
+ * Prefer writing an absolute path as a scaffold-project alias or relative path
  */
 function formatImportForBase(absTarget, fromAbsFile, baseConfig) {
   const root = baseConfig.root
   const relFromRoot = toPosixRel(absTarget, root)
 
-  // 优先 alias（最长前缀）
+  // Prefer alias (longest prefix)
   const aliasKeys = Object.keys(baseConfig.alias || {}).sort((a, b) => b.length - a.length)
   for (let i = 0; i < aliasKeys.length; i += 1) {
     const key = aliasKeys[i]
     const aliasRoot = baseConfig.alias[key]
     const inside = toPosixRel(absTarget, aliasRoot)
     if (inside && !inside.startsWith('..')) {
-      // 去掉扩展名（跟常见工程 import 习惯一致）
+      // Drop extension (matches common project import style)
       const noExt = stripExt(inside)
       return key + (noExt ? '/' + noExt : '')
     }
   }
 
-  // 相对路径
+  // Relative path
   let rel = path.relative(path.dirname(fromAbsFile), absTarget).split(path.sep).join('/')
   rel = stripExt(rel)
   if (!rel.startsWith('.')) rel = './' + rel
@@ -37,7 +37,7 @@ function stripExt(p) {
 }
 
 /**
- * 源文件中的 specifier → 新 specifier
+ * Map a specifier in the source file to a new specifier
  * @returns {{ next: string|null, reason: string, resolved: string|null }}
  */
 function rewriteSpecifier(specifier, fromAbsSource, toAbsDest, sourceConfig, baseConfig, pathMap) {
@@ -45,10 +45,10 @@ function rewriteSpecifier(specifier, fromAbsSource, toAbsDest, sourceConfig, bas
     return { next: null, reason: 'url', resolved: null }
   }
 
-  // 已在显式映射表（批量 ingest 时：旧绝对路径 → 新绝对路径）
+  // Already in explicit map (batch ingest: old abs → new abs)
   const hit = resolveImport(specifier, fromAbsSource, sourceConfig)
   if (hit.external || !hit.resolved) {
-    // 源侧解析失败：若是 @/ 且底座也有同名 alias，直接换成底座语义（路径段保留）
+    // Source resolve failed: if @/ and scaffold has same alias, switch to scaffold meaning (keep path segments)
     if (specifier.startsWith('@/') || specifier.startsWith('~/')) {
       return { next: specifier, reason: 'alias-passthrough', resolved: null }
     }
@@ -65,7 +65,7 @@ function rewriteSpecifier(specifier, fromAbsSource, toAbsDest, sourceConfig, bas
     }
   }
 
-  // 单文件：依赖仍在源工程内 → 尽量按「相对源根的镜像路径」映射到底座
+  // Single file: dep still inside source project → map via mirrored path relative to source root
   const relInSource = toPosixRel(srcAbs, sourceConfig.root)
   if (relInSource && !relInSource.startsWith('..')) {
     const mirrored = path.join(baseConfig.root, relInSource)
@@ -81,15 +81,15 @@ function rewriteSpecifier(specifier, fromAbsSource, toAbsDest, sourceConfig, bas
 }
 
 function replaceQuoteLiteral(code, start, end, newValue) {
-  // start/end 是字符索引（babel 的 node.start/end）
+  // start/end are char offsets (babel node.start/end)
   return code.slice(0, start) + JSON.stringify(newValue).replace(/^"|"$/g, (m) => {
-    // 尽量保留原引号
+    // Prefer keeping original quotes
     return m
   })
 }
 
 /**
- * 对一段 JS 代码重写 import/require 字符串
+ * Rewrite import/require string literals in a JS snippet
  */
 function rewriteJsCode(code, fromAbsSource, toAbsDest, sourceConfig, baseConfig, pathMap) {
   let ast
@@ -148,7 +148,7 @@ function rewriteJsCode(code, fromAbsSource, toAbsDest, sourceConfig, baseConfig,
     },
   })
 
-  // 从后往前应用，避免偏移
+  // Apply from back to front to avoid offset drift
   edits.sort((a, b) => b.start - a.start)
   let out = code
   edits.forEach((e) => {
@@ -159,9 +159,9 @@ function rewriteJsCode(code, fromAbsSource, toAbsDest, sourceConfig, baseConfig,
 }
 
 /**
- * 重写整个文件内容：
- * - .vue：只对「真代码」script 走 JS 重写；template(html) 不改 import
- * - .js/.ts：整文件走 JS
+ * Rewrite whole file content:
+ * - .vue: JS rewrite only for real script code; template(html) imports untouched
+ * - .js/.ts: whole file through JS
  */
 function rewriteFileContent(content, ext, fromAbsSource, toAbsDest, sourceConfig, baseConfig, pathMap) {
   const allChanges = []

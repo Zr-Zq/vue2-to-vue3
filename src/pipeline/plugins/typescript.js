@@ -2,7 +2,7 @@ const { createPlugin } = require('../create-plugin')
 
 module.exports = createPlugin({
   name: 'typescript',
-  description: 'TypeScript / lang="ts" 处理（可插拔）',
+  description: 'TypeScript / lang="ts" handling (pluggable)',
   version: '0.1.0',
   defaults: { mode: 'detect' },
   match(ctx) {
@@ -22,7 +22,7 @@ module.exports = createPlugin({
     ctx.report({
       level: hits.includes('class-component') ? 'warn' : 'info',
       plugin: 'typescript',
-      message: hits.length ? 'TS: ' + hits.join(', ') : 'TS 相关文件',
+      message: hits.length ? 'TS: ' + hits.join(', ') : 'TS related files',
     })
 
     if (api.options.mode === 'annotate' && !ctx.file.content.includes('/* v23:plugin=typescript */')) {

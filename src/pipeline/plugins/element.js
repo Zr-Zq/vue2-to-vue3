@@ -1,11 +1,11 @@
 const { createPlugin } = require('../create-plugin')
 
 /**
- * ElementUI → Element Plus 插件位
+ * ElementUI → Element Plus plugin slot.
  */
 module.exports = createPlugin({
   name: 'element',
-  description: 'Element UI → Element Plus（可插拔）',
+  description: 'Element UI → Element Plus (pluggable)',
   version: '0.1.0',
   defaults: {
     mode: 'detect',

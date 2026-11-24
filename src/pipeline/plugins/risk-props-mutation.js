@@ -11,7 +11,7 @@ const {
 
 module.exports = createPlugin({
   name: 'risk-props-mutation',
-  description: '检出对 props 的赋值/改字段',
+  description: 'Detect assignment/mutation of props',
   version: '0.1.0',
   match(ctx) {
     return ctx.file.kind === 'vue' || /\.(js|jsx|ts|tsx)$/.test(ctx.file.ext)
@@ -33,10 +33,10 @@ module.exports = createPlugin({
             level: 'block',
             auto: 'partial',
             file: ctx.file.path,
-            message: '疑似修改 props: this.' + chain.join('.'),
+            message: 'Suspected props mutation: this.' + chain.join('.'),
             loc: locOf(p.node),
             evidence: 'this.' + chain.join('.'),
-            hint: '可检出直接赋值；经别名/解构会漏',
+            hint: 'Direct assignment detectable; aliases/destructuring may miss',
           })
         },
         UpdateExpression(p) {
@@ -48,14 +48,14 @@ module.exports = createPlugin({
             level: 'block',
             auto: 'partial',
             file: ctx.file.path,
-            message: '疑似自增改 props: this.' + chain.join('.'),
+            message: 'Suspected self-mutation of props: this.' + chain.join('.'),
             loc: locOf(p.node),
             evidence: 'this.' + chain.join('.'),
-            hint: 'Vue2 子组件改 props 是常见坑',
+            hint: 'Child mutating props is a common Vue2 pitfall',
           })
         },
         CallExpression(p) {
-          // this.$set(this.propObj, key, val) 且 propObj 是 prop
+          // this.$set(this.propObj, key, val) where propObj is a prop
           const callee = p.node.callee
           if (
             t.isMemberExpression(callee) &&
@@ -71,7 +71,7 @@ module.exports = createPlugin({
                 level: 'warn',
                 auto: 'partial',
                 file: ctx.file.path,
-                message: '$set 目标疑似 props: this.' + chain.join('.'),
+                message: '$set target looks like props: this.' + chain.join('.'),
                 loc: locOf(p.node),
                 evidence: 'this.$set(this.' + chain.join('.') + ', …)',
               })

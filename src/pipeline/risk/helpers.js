@@ -62,9 +62,9 @@ function locOf(node) {
 }
 
 /**
- * 加载应走 JS 处理的 script（真代码 + 有 AST）。
- * Vue：只用 jsParts；普通 js：整文件。
- * 优先用流水线里当前 content，避免读到磁盘旧内容。
+ * Load scripts that should go through JS handling (real code + AST).
+ * Vue: jsParts only; plain js: whole file.
+ * Prefer in-pipeline content over stale disk content.
  */
 function loadScripts(fileCtx) {
   try {
@@ -83,7 +83,7 @@ function loadScripts(fileCtx) {
   }
 }
 
-/** 加载 Vue template（html 部分） */
+/** Load Vue template (html parts) */
 function loadHtmlParts(fileCtx) {
   try {
     const abs = fileCtx.file.absPath || 'anon.vue'
@@ -97,7 +97,7 @@ function loadHtmlParts(fileCtx) {
 }
 
 /**
- * 分析当前文件 HTML（template）部分；带缓存到 file.meta
+ * Analyze this file's HTML (template) parts; cache on file.meta.
  */
 function loadHtmlAnalysis(fileCtx) {
   try {
@@ -115,7 +115,7 @@ function loadHtmlAnalysis(fileCtx) {
   }
 }
 
-/** 把 html findings 推入风险表 */
+/** Push html findings into the risk store */
 function pushHtmlFindings(project, analysis, filePath) {
   if (!analysis || !analysis.findings) return 0
   let n = 0
@@ -146,7 +146,7 @@ function memberName(node) {
 }
 
 function thisMemberChain(node) {
-  // this.a.b → ['a','b'] ；仅支持非 computed
+  // this.a.b → ['a','b']; non-computed only
   const parts = []
   let cur = node
   while (t.isMemberExpression(cur)) {
@@ -158,7 +158,7 @@ function thisMemberChain(node) {
   return parts
 }
 
-/** 从 Options API 抽 props 名集合 */
+/** Collect prop name set from Options API */
 function collectPropNames(ast) {
   const names = new Set()
   if (!ast) return names
@@ -231,7 +231,7 @@ function hasOptionKey(ast, optionName) {
 }
 
 function extractTemplate(content, absPath) {
-  // 走 SFC 拆解的 html 部分（避免正则截断嵌套 template）
+  // Use SFC-decomposed html parts (avoid regex truncating nested template)
   try {
     const parts = decomposeVue(String(content || ''), absPath || 'anon.vue')
     if (parts.template && parts.template.code) return parts.template.code

@@ -1,5 +1,5 @@
 /**
- * 自定义指令钩子名 Vue2 → Vue3（确定性映射）
+ * Custom directive hook names Vue2 → Vue3 (deterministic map)
  * bind → beforeMount
  * inserted → mounted
  * update → beforeUpdate
@@ -45,7 +45,7 @@ function migrateDirectiveHooks(code, filename) {
   try {
     ast = parseJs(code, filename || 'dir.js')
   } catch (e) {
-    // 解析失败不盲改（bind/update 太易误伤）
+    // Do not blindly rewrite on parse failure (bind/update are too easy to false-hit)
     return { code, changes, error: e.message }
   }
 
@@ -85,7 +85,7 @@ function migrateDirectiveHooksText(code) {
   Object.keys(HOOK_MAP).forEach((from) => {
     const re = new RegExp('(\\b)' + from + '(\\s*\\()', 'g')
     out = out.replace(re, (m, a, b) => {
-      // 仅在像钩子定义时：行首/逗号/空白后的 bind(el
+      // Only when it looks like a hook definition: bind(el after BOL/comma/whitespace
       changes.push({ kind: 'directive-hook-text', to: HOOK_MAP[from] })
       return a + HOOK_MAP[from] + b
     })

@@ -22,7 +22,7 @@ module.exports = createPlugin({
         ctx.report({
           level: 'info',
           plugin: 'migrate-mount',
-          message: 'mount 改写 ×' + result.changes.length,
+          message: 'mount rewrites ×' + result.changes.length,
         })
       }
       return
@@ -33,7 +33,7 @@ module.exports = createPlugin({
       ctx.report({
         level: 'info',
         plugin: 'migrate-mount',
-        message: 'mount 改写 ×' + result.changes.length,
+        message: 'mount rewrites ×' + result.changes.length,
       })
     }
   },

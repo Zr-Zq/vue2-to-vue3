@@ -4,12 +4,12 @@ const { applySfcTransforms } = require('../../transform/apply-sfc')
 const { addFiltersHandoff, flushHandoff } = require('../../handoff')
 
 /**
- * HTML 流：只改 template（sync / native / slot / v-for+v-if / keep-alive / |filter→调用）
- * filters→methods 属 JS 流；此处只写 .v23/handoff.json 交接项。
+ * HTML stream: rewrite template only (sync / native / slot / v-for+v-if / keep-alive / |filter→call).
+ * filters→methods belongs to the JS stream; here only write .v23/handoff.json items.
  */
 module.exports = createPlugin({
   name: 'migrate-html',
-  description: 'HTML 流：改写 template；filter 交接给 JS 流',
+  description: 'HTML stream: rewrite template; hand off filters to JS stream',
   version: '0.2.0',
   defaults: { enabled: true, stream: 'html' },
   match(ctx, api) {
@@ -26,7 +26,7 @@ module.exports = createPlugin({
       ctx.report({
         level: 'info',
         plugin: 'migrate-html',
-        message: 'html 改写 ×' + result.changes.length,
+        message: 'html rewrites ×' + result.changes.length,
       })
     }
     const filterNames = (result.meta && result.meta.filterNames) || []

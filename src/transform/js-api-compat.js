@@ -1,11 +1,11 @@
 /**
- * 确定性 JS API 兼容改写：
+ * Deterministic JS API compatibility rewrites:
  * - beforeDestroy → beforeUnmount / destroyed → unmounted
- * - this.$set / Vue.set → 直接赋值
+ * - this.$set / Vue.set → direct assignment
  * - this.$delete / Vue.delete → delete
  * - this.$listeners → this.$attrs
- * - this.$scopedSlots → this.$slots（全文件，不只 render）
- * - 删除 Vue.config.productionTip / silent 赋值
+ * - this.$scopedSlots → this.$slots (whole file, not only render)
+ * - Remove Vue.config.productionTip / silent assignments
  */
 const traverse = require('@babel/traverse').default
 const generate = require('@babel/generator').default
@@ -74,7 +74,7 @@ function migrateApiCompat(code, filename) {
   try {
     ast = parseJs(code, filename || 'api.js')
   } catch (e) {
-    // 回退：纯文本生命周期 / listeners（解析失败时）
+    // Fallback: plain-text lifecycle / listeners (when parse fails)
     return migrateApiCompatText(code)
   }
 
@@ -157,7 +157,7 @@ function migrateApiCompatText(code) {
     return 'beforeUnmount'
   })
   out = out.replace(/\bdestroyed\b(?!\s*\()/g, (m, off, src) => {
-    // 避免误伤普通变量名 destroyedXxx；只改作方法键时大致命中
+    // Avoid false positives like destroyedXxx; only hit when used as method keys (approx)
     const before = src.slice(Math.max(0, off - 20), off)
     if (/function\s*$/.test(before) || /[,{\s]$/.test(before) || /:\s*$/.test(before)) {
       changes.push({ kind: 'lifecycle-text', to: 'unmounted' })

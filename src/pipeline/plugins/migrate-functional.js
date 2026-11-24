@@ -18,7 +18,7 @@ function looksFunctional(src) {
 
 module.exports = createPlugin({
   name: 'migrate-functional',
-  description: '<template functional> / functional:true → 普通组件（官方迁移路径）',
+  description: '<template functional> / functional:true → normal component (official path)',
   version: '0.1.0',
   defaults: { enabled: true },
   match(ctx, api) {
@@ -31,9 +31,9 @@ module.exports = createPlugin({
     const allChanges = []
 
     if (ctx.file.ext === '.vue' || ctx.file.kind === 'vue') {
-      // 先清掉模板/脚本块外的非法 /* AI-TODO */（会搞坏 SFC 解析）
+      // Drop orphan /* AI-TODO */ outside template/script blocks (breaks SFC parse)
       content = content.replace(
-        /^[ \t]*\/\*\s*迁移脚本注释:[\s\S]*?\*\/[ \t]*\r?\n/gm,
+        /^[ \t]*\/\*\s*(?:迁移脚本注释:\s*)?AI-TODO:?[\s\S]*?\*\/[ \t]*\r?\n/gm,
         (m) => {
           if (/\[functional\]/.test(m)) {
             allChanges.push({ kind: 'fn-drop-orphan-comment' })
@@ -62,7 +62,7 @@ module.exports = createPlugin({
       content = result.content
       allChanges.push(...result.changes)
 
-      // SFC 解析失败时的兜底：直接改 <template>…</template> / <script>…</script>
+      // Fallback when SFC parse fails: edit <template>…</template> / <script>…</script> directly
       if (
         wasFunctional &&
         (/v-on\s*=\s*["']listeners["']/.test(content) ||
@@ -99,7 +99,7 @@ module.exports = createPlugin({
       ctx.report({
         level: 'info',
         plugin: 'migrate-functional',
-        message: 'functional → 普通组件 ×' + allChanges.length,
+        message: 'functional → normal component ×' + allChanges.length,
       })
     }
 
@@ -108,7 +108,7 @@ module.exports = createPlugin({
       ctx.report({
         level: 'warn',
         plugin: 'migrate-functional',
-        message: 'functional 残留需回归: ' + residual.join(','),
+        message: 'functional residual needs regression: ' + residual.join(','),
       })
     }
   },

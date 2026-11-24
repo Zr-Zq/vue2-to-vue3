@@ -1,12 +1,12 @@
 const { createPlugin } = require('../create-plugin')
 
 /**
- * SCSS 处理插件位：lang=scss / .scss / deep 选择器
+ * SCSS handling plugin slot: lang=scss / .scss / deep selectors.
  * mode: detect | annotate
  */
 module.exports = createPlugin({
   name: 'scss',
-  description: 'SCSS / lang="scss" 处理（可插拔）',
+  description: 'SCSS / lang="scss" handling (pluggable)',
   version: '0.1.0',
   defaults: { mode: 'detect' },
   match(ctx) {
@@ -24,7 +24,7 @@ module.exports = createPlugin({
     ctx.report({
       level: 'info',
       plugin: 'scss',
-      message: hits.length ? 'SCSS: ' + hits.join(', ') : 'SCSS 相关文件',
+      message: hits.length ? 'SCSS: ' + hits.join(', ') : 'SCSS related files',
     })
 
     if (api.options.mode === 'annotate' && !ctx.file.content.includes('/* v23:plugin=scss */')) {

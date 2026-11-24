@@ -5,7 +5,7 @@ const V2_HOOKS = new Set(['bind', 'inserted', 'update', 'componentUpdated', 'unb
 
 module.exports = createPlugin({
   name: 'risk-directives',
-  description: '检出自定义指令及 Vue2 钩子名',
+  description: 'Detect custom directives and Vue2 hook names',
   version: '0.1.0',
   match(ctx) {
     return /directives\s*:|Vue\.directive/.test(ctx.file.content)
@@ -44,10 +44,10 @@ module.exports = createPlugin({
               level: 'info',
               auto: 'yes',
               file: ctx.file.path,
-              message: '本地指令 ' + dname + (hooks.length ? ' 钩子: ' + hooks.join(',') : ''),
+              message: 'local directive ' + dname + (hooks.length ? ' hooks: ' + hooks.join(',') : ''),
               loc: locOf(prop),
               evidence: dname,
-              hint: '钩子名已由 migrate-directive-hooks 映射',
+              hint: 'Hook names mapped by migrate-directive-hooks',
             })
           })
         },
@@ -66,10 +66,10 @@ module.exports = createPlugin({
               level: 'info',
               auto: 'yes',
               file: ctx.file.path,
-              message: '全局 Vue.directive(' + name + ')（钩子名可脚本映射）',
+              message: 'global Vue.directive(' + name + ') (hook names can be script-mapped)',
               loc: locOf(p.node),
               evidence: 'Vue.directive',
-              hint: '登记仍在 Vue.directive；挂到 app.directive 需入口改造',
+              hint: 'Still registered via Vue.directive; move to app.directive needs entry changes',
             })
           }
         },

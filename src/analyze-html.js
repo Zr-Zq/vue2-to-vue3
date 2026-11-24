@@ -1,8 +1,8 @@
 /**
- * Vue SFC 的 HTML（template）处理：
- * - 按行号扫描标签 / 属性 / 插值
- * - 产出结构化元素与 Vue2→3 相关 findings
- * 不走 JS/Babel；script 外链/空壳不在这里处理。
+ * Vue SFC HTML (template) handling:
+ * - Scan tags / attrs / interpolations by line
+ * - Emit structured elements and Vue2→3 findings
+ * No JS/Babel; external/empty scripts are not handled here.
  */
 const { decomposeVue } = require('./sfc-parts')
 
@@ -35,10 +35,10 @@ function offsetToLoc(code, offset) {
 function addLoc(base, relative) {
   if (!base) return relative
   if (!relative) return { line: base.startLine || base.line || 1, column: relative?.column || 0 }
-  // template 内相对行 → 文件绝对行
+  // Relative line inside template → absolute file line
   const startLine = base.startLine || base.line || 1
   if (relative.line === 1) {
-    // 首行：列也要加 template 起始列（粗略：只用行）
+    // First line: column would also need template start column (approx: use line only)
     return { line: startLine, column: relative.column }
   }
   return { line: startLine + relative.line - 1, column: relative.column }
@@ -48,7 +48,7 @@ function parseAttrs(attrStr, code, attrStartOffset) {
   /** @type {HtmlAttr[]} */
   const attrs = []
   if (!attrStr) return attrs
-  // 含 :[x] / @[x] / v-bind:[x] / @click.native / v-slot:foo
+  // Includes :[x] / @[x] / v-bind:[x] / @click.native / v-slot:foo
   const re =
     /((?:v-bind|v-on):\[[^\]]+\]|:[^\s="'`<>=]+|@[^\s="'`<>=]+|#[^\s="'`<>=]+|v-[\w:-]+|[\w:-]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'`<>=]+)))?/g
   let m
@@ -67,8 +67,8 @@ function parseAttrs(attrStr, code, attrStartOffset) {
 }
 
 /**
- * 扫描 template HTML 源码
- * @param {string} code template 内容（不含 <template> 外壳）
+ * Scan template HTML source
+ * @param {string} code template body (without <template> wrapper)
  */
 function scanHtml(code) {
   const src = String(code || '')
@@ -134,10 +134,10 @@ function scanHtml(code) {
 }
 
 function extractFilters(expr) {
-  // 粗分：管道；避开 ||
+  // Rough split: pipes; avoid ||
   const filters = []
   if (!expr || expr.indexOf('|') === -1) return filters
-  // 去掉字符串里的 |
+  // Strip | inside string literals
   const cleaned = String(expr)
     .replace(/(['"`])(?:\\.|(?!\1).)*\1/g, '""')
     .replace(/\|{2}/g, ' ')
@@ -185,7 +185,7 @@ function isDirectiveAttr(name) {
 }
 
 /**
- * 从扫描结果生成迁移 findings（loc 相对 template）
+ * Build migration findings from scan results (loc relative to template)
  */
 function collectHtmlFindings(scan, meta) {
   const findings = []
@@ -214,17 +214,19 @@ function collectHtmlFindings(scan, meta) {
     const map = el.attrsMap
     const names = Object.keys(map)
 
-    // v-for + v-if 同节点
+    // v-for + v-if on same node → AI must decide Vue3 shape (:key on <template>, etc.)
+    // Different nodes: no action (not reported).
     if (map['v-for'] != null && map['v-if'] != null) {
       const a = el.attrs.find((x) => x.name === 'v-for') || el.attrs[0]
       push({
         id: 'html.v-for-v-if',
         category: 'v-for-v-if',
-        level: 'info',
-        auto: 'yes',
-        message: '同元素同时使用 v-for 与 v-if（<' + el.tag + '>）',
+        level: 'warn',
+        auto: 'no',
+        message: 'Same element uses both v-for and v-if (<' + el.tag + '>) — AI must migrate',
         evidence: (el.raw || '').slice(0, 120),
-        hint: '脚本拆成 <template v-for> + 内层 v-if（确定性）',
+        hint:
+          'Vue3: prefer <template v-for :key> + inner v-if; do not leave same-node combo. Different-node v-for/v-if: leave as-is.',
         loc: a ? a.loc : el.loc,
       })
     }
@@ -238,9 +240,9 @@ function collectHtmlFindings(scan, meta) {
           category: 'native-modifier',
           level: 'info',
           auto: 'yes',
-          message: '使用 .native 修饰符（' + n + '）',
+          message: 'Uses .native modifier (' + n + ')',
           evidence: n + (map[n] !== true ? '=' + map[n] : ''),
-          hint: '脚本去掉 .native',
+          hint: 'Script removes .native',
           loc: a ? a.loc : el.loc,
         })
       }
@@ -255,15 +257,15 @@ function collectHtmlFindings(scan, meta) {
           category: 'sync-modifier',
           level: 'warn',
           auto: 'yes',
-          message: '使用 .sync 修饰符（' + n + '）',
+          message: 'Uses .sync modifier (' + n + ')',
           evidence: n,
-          hint: '脚本改为 v-model:prop（不能只删 .sync，否则丢双向更新）',
+          hint: 'Script rewrites to v-model:prop (do not only drop .sync or two-way updates are lost)',
           loc: a ? a.loc : el.loc,
         })
       }
     })
 
-    // 动态参数
+    // Dynamic arguments
     names.forEach((n) => {
       if (
         /^v-bind\s*:?\s*\[/.test(n) ||
@@ -277,15 +279,15 @@ function collectHtmlFindings(scan, meta) {
           category: 'dynamic-args',
           level: 'info',
           auto: 'yes',
-          message: '动态参数/事件 ' + n,
+          message: 'Dynamic arg/event ' + n,
           evidence: n,
-          hint: '语法多可保留，边角需回归',
+          hint: 'Syntax often keeps; edge cases need regression',
           loc: a ? a.loc : el.loc,
         })
       }
     })
 
-    // 绑定里的过滤器
+    // Filters in bindings
     el.attrs.forEach((a) => {
       if (!a.value) return
       if (!(a.name.startsWith(':') || a.name.startsWith('v-bind:') || a.name === 'v-bind')) return
@@ -295,14 +297,14 @@ function collectHtmlFindings(scan, meta) {
         category: 'filters',
         level: 'info',
         auto: 'yes',
-        message: '属性绑定中的过滤器管道 |',
+        message: 'Filter pipe | in attribute binding',
         evidence: a.name + '="' + a.value.slice(0, 80) + '"',
-        hint: 'Vue3 移除 filters；改方法或 computed',
+        hint: 'Vue3 removed filters; use method or computed',
         loc: a.loc,
       })
     })
 
-    // 旧 slot
+    // Legacy slot
     if (map.slot != null || map['slot-scope'] != null || map.scope != null) {
       const a =
         el.attrs.find((x) => x.name === 'slot' || x.name === 'slot-scope' || x.name === 'scope') ||
@@ -314,10 +316,10 @@ function collectHtmlFindings(scan, meta) {
         auto: 'yes',
         message:
           map['slot-scope'] != null || map.scope != null
-            ? '旧版 slot-scope / scope'
-            : '旧版 slot="' + map.slot + '"',
+            ? 'Legacy slot-scope / scope'
+            : 'Legacy slot="' + map.slot + '"',
         evidence: (el.raw || '').slice(0, 120),
-        hint: '可改为 v-slot / #',
+        hint: 'Can rewrite to v-slot / #',
         loc: a ? a.loc : el.loc,
       })
     }
@@ -329,9 +331,9 @@ function collectHtmlFindings(scan, meta) {
         category: 'keepalive-combo',
         level: 'info',
         auto: 'yes',
-        message: '使用 <keep-alive>',
+        message: 'Uses <keep-alive>',
         evidence: el.raw.slice(0, 80),
-        hint: '与 :is 组合时脚本补 :key',
+        hint: 'When combined with :is, script adds :key',
         loc: el.loc,
       })
     }
@@ -344,14 +346,14 @@ function collectHtmlFindings(scan, meta) {
         category: 'keepalive-combo',
         level: 'info',
         auto: 'yes',
-        message: '<component :is> 动态组件',
+        message: '<component :is> dynamic component',
         evidence: el.raw.slice(0, 80),
-        hint: '与 keep-alive 组合时脚本补 :key',
+        hint: 'When combined with keep-alive, script adds :key',
         loc: el.loc,
       })
     }
 
-    // 任意标签上的 :is
+    // :is on any tag
     if (map[':is'] != null || map['v-bind:is'] != null) {
       if (el.tag !== 'component' && el.tag !== 'Component') {
         push({
@@ -359,7 +361,7 @@ function collectHtmlFindings(scan, meta) {
           category: 'keepalive-combo',
           level: 'info',
           auto: 'yes',
-          message: '<' + el.tag + ' :is> 动态组件',
+          message: '<' + el.tag + ' :is> dynamic component',
           evidence: el.raw.slice(0, 80),
           loc: el.loc,
         })
@@ -367,7 +369,7 @@ function collectHtmlFindings(scan, meta) {
     }
   })
 
-  // 插值过滤器
+  // Interpolation filters
   ;(scan.interpolations || []).forEach((it) => {
     if (!it.filters || !it.filters.length) return
     push({
@@ -375,14 +377,14 @@ function collectHtmlFindings(scan, meta) {
       category: 'filters',
       level: 'warn',
       auto: 'yes',
-      message: '模板插值过滤器 | ' + it.filters.join(', '),
+      message: 'Template interpolation filter | ' + it.filters.join(', '),
       evidence: '{{ ' + it.text.slice(0, 80) + ' }}',
-      hint: '脚本改为函数调用，filters 选项并入 methods',
+      hint: 'Script rewrites to function calls; merge filters option into methods',
       loc: it.loc,
     })
   })
 
-  // 旧 slot 与 v-slot 混用
+  // Legacy slot mixed with v-slot
   let hasLegacy = false
   let hasVSlot = false
   elements.forEach((el) => {
@@ -399,8 +401,8 @@ function collectHtmlFindings(scan, meta) {
       category: 'legacy-slot',
       level: 'warn',
       auto: 'partial',
-      message: '旧 slot 与 v-slot 混用',
-      hint: '混写需人工确认',
+      message: 'Legacy slot mixed with v-slot',
+      hint: 'Mixed usage needs manual confirmation',
       loc: { line: 1, column: 0 },
     })
   }
@@ -436,7 +438,7 @@ function summarizeScan(scan, findings) {
 }
 
 /**
- * 分析一段 template HTML
+ * Analyze a template HTML snippet
  * @param {string} code
  * @param {{ file?: string, range?: { startLine: number }, templateAttrs?: object }} [meta]
  */
@@ -455,14 +457,14 @@ function analyzeHtmlTemplate(code, meta) {
       auto: 'yes',
       part: 'html',
       file: opts.file || null,
-      message: '<template functional> 函数式模板',
+      message: '<template functional> functional template',
       evidence: 'functional',
-      hint: '脚本改为普通组件：$props / $attrs，去掉 listeners',
+      hint: 'Script rewrites to normal component: $props / $attrs, drop listeners',
       loc: { line: 1, column: 0 },
     })
   }
 
-  // 映射到文件绝对行号
+  // Map to absolute file line numbers
   if (opts.range && opts.range.startLine) {
     findings = findings.map((f) =>
       Object.assign({}, f, {
@@ -484,7 +486,7 @@ function analyzeHtmlTemplate(code, meta) {
 }
 
 /**
- * 从整份 .vue 源码分析 HTML 部分
+ * Analyze HTML parts from full .vue source
  */
 function analyzeVueHtml(vueSource, absPath, fileRel) {
   const parts = decomposeVue(String(vueSource || ''), absPath || 'anon.vue')
@@ -505,7 +507,7 @@ function analyzeVueHtml(vueSource, absPath, fileRel) {
   Object.keys(rawAttrs || {}).forEach((k) => {
     attrs[k] = rawAttrs[k]
   })
-  // vue2 parseComponent 可能把 functional 放在 template.attrs
+  // vue2 parseComponent may put functional on template.attrs
   if (parts.descriptor && parts.descriptor.template) {
     const t = parts.descriptor.template
     if (t.attrs && t.attrs.functional != null) attrs.functional = t.attrs.functional

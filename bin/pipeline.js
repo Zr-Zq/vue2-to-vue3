@@ -15,19 +15,20 @@ const {
 function printHelp() {
   console.log(`Usage: v23-pipeline <projectRoot> [options]
 
-可插拔迁移流水线：文件依次通过配置的插件，上一阶段输出 → 下一阶段输入。
+Pluggable migration pipeline: each file passes through configured plugins;
+output of one stage becomes input of the next.
 
 Options:
-  --config <file>   流水线配置（默认读项目下 v23.pipeline.js / pipeline.config.js）
-  --out <dir>       改写输出目录（默认 dry-run 不写源码）
-  --write           关闭 dry-run，写出文件
-  --annotate        所有内置插件 mode=annotate（演示改写）
-  --list            列出内置插件后退出
-  --order <a,b,c>   临时覆盖流水线顺序（逗号分隔插件名）
-  --disable <a,b>   禁用插件
+  --config <file>   Pipeline config (default: project v23.pipeline.js / pipeline.config.js)
+  --out <dir>       Rewrite output dir (default dry-run does not write sources)
+  --write           Disable dry-run; write files
+  --annotate        All built-in plugins mode=annotate (demo rewrite)
+  --list            List built-in plugins and exit
+  --order <a,b,c>   Temporarily override pipeline order (comma-separated plugin names)
+  --disable <a,b>   Disable plugins
   -h, --help
 
-分析产物默认读写 <project>/.v23/；全流程请用 v23-run（结束自动清理）。
+Analysis artifacts default to <project>/.v23/; use v23-run for the full flow (auto-clean at end).
 `)
 }
 
@@ -63,7 +64,7 @@ async function main() {
 
   if (args.list) {
     const reg = createDefaultRegistry()
-    console.log('内置插件:')
+    console.log('Built-in plugins:')
     reg.list().forEach((p) => console.log(`  - ${p.name}  ${p.description}`))
     process.exit(0)
   }
@@ -75,11 +76,11 @@ async function main() {
 
   const projectRoot = path.resolve(args.projectRoot)
   if (!fs.existsSync(projectRoot)) {
-    console.error('项目不存在:', projectRoot)
+    console.error('Project not found:', projectRoot)
     process.exit(1)
   }
 
-  // 配置：优先 CLI --config；否则项目内；再回退到 2to3/pipeline.config.js
+  // Config: CLI --config first; else in-project; else 2to3/pipeline.config.js
   let configPath = args.configPath
   if (!configPath) {
     const local = ['v23.pipeline.js', 'v23.pipeline.cjs', 'v23.pipeline.json', 'pipeline.config.js']
@@ -117,10 +118,10 @@ async function main() {
   if (args.write) config.dryRun = false
   if (args.outDir) config.outDir = path.resolve(args.outDir)
 
-  console.log('流水线项目:', projectRoot)
-  console.log('配置:', config.__loadedFrom || configPath)
+  console.log('Pipeline project:', projectRoot)
+  console.log('Config:', config.__loadedFrom || configPath)
   console.log(
-    '顺序:',
+    'Order:',
     (config.pipeline || [])
       .filter((e) => (typeof e === 'string' ? true : e.enabled !== false))
       .map((e) => (typeof e === 'string' ? e : e.name || e.use))
@@ -149,19 +150,19 @@ async function main() {
 
   console.log(
     [
-      `完成 ${ms}ms`,
+      `Done ${ms}ms`,
       `files=${result.stats.files}`,
       `changed=${result.stats.changed}`,
       `errors=${result.stats.errors}`,
     ].join(' · ')
   )
-  console.log('插件统计:', JSON.stringify(result.stats.byPlugin))
-  console.log('报告(项目内):', reportPath)
-  console.log('工作目录:', projectWorkDir(projectRoot), '（v23-run 结束会清理）')
+  console.log('Plugin stats:', JSON.stringify(result.stats.byPlugin))
+  console.log('Report (in project):', reportPath)
+  console.log('Work dir:', projectWorkDir(projectRoot), '(cleaned when v23-run finishes)')
 
-  // 打印有报告的文件摘要
+  // Print summary of files that produced reports
   const withReports = result.results.filter((r) => r.reports && r.reports.length)
-  console.log(`命中文件 ${withReports.length}（最多列 25）:`)
+  console.log(`Hit files ${withReports.length} (max 25 listed):`)
   withReports.slice(0, 25).forEach((r) => {
     const msg = r.reports.map((x) => x.plugin + ':' + x.message).join(' | ')
     console.log(`  - ${r.path}  ${msg}`)

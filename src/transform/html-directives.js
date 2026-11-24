@@ -1,13 +1,13 @@
 /**
- * HTML/template 可自动改写：
- * - :prop.sync / v-bind:prop.sync → v-model:prop（不能只删 .sync，否则丢 update）
+ * HTML/template auto-rewrites:
+ * - :prop.sync / v-bind:prop.sync → v-model:prop (do not only drop .sync or updates are lost)
  * - @evt.native / v-on:evt.native → @evt / v-on:evt
- * - 旧 slot / slot-scope → #name / v-slot
+ * - Legacy slot / slot-scope → #name / v-slot
  */
 
 /**
  * :foo.sync="x" / v-bind:foo.sync="x" → v-model:foo="x"
- * 注意：只去掉 .sync 会变成单向绑定，行为会变。
+ * Note: only removing .sync becomes one-way binding and changes behavior.
  */
 function rewriteSync(code) {
   const changes = []
@@ -30,7 +30,7 @@ function rewriteSync(code) {
   return { code: out, changes }
 }
 
-/** @click.native.stop → @click.stop ；去掉 native，保留其它修饰符 */
+/** @click.native.stop → @click.stop ; drop native, keep other modifiers */
 function rewriteNative(code) {
   const changes = []
   let out = String(code || '')
@@ -51,7 +51,7 @@ function rewriteNative(code) {
 }
 
 /**
- * 当前位置是否已在同名 <template #name|slot="name"> 内（避免嵌套 v-slot）
+ * Whether current position is already inside same-named <template #name|slot="name"> (avoid nested v-slot)
  */
 function enclosingTemplateSlotName(src, pos) {
   const stack = []
@@ -80,9 +80,9 @@ function enclosingTemplateSlotName(src, pos) {
 }
 
 /**
- * 旧插槽 → 统一 # / v-slot
+ * Legacy slots → unify to # / v-slot
  * - <template slot="a"> → <template #a>
- * - 元素 slot=：深度配对包裹；若已在同名 template 插槽内则只删 slot（Element 菜单标题常见）
+ * - Element slot=: depth-pair wrap; if already inside same-named template slot, only drop slot attr (common for Element menu titles)
  */
 function rewriteSlots(code) {
   const changes = []
@@ -111,7 +111,7 @@ function rewriteSlots(code) {
     return next
   })
 
-  // 2) 元素 slot=（含嵌套子标签）：深度配对；同名外层 template 内只去 attr
+  // 2) Element slot= (incl. nested children): depth-pair; inside same-named outer template, only drop attr
   const pieces = []
   const startRe = /<([A-Za-z][\w.-]*)/g
   let m
@@ -135,14 +135,14 @@ function rewriteSlots(code) {
 
     const parentSlot = enclosingTemplateSlotName(out, m.index)
     if (parentSlot && parentSlot === slotName && !scopeM) {
-      // 已在同名插槽 template 内：只删 slot，避免 <template #title> 再套一层
+      // Already inside same-named slot template: only drop slot, avoid nesting another <template #title>
       const openStart = m.index
       const openEnd = scanned.end
       const oldOpen = out.slice(openStart, openEnd)
       const newOpen = scanned.selfClose
         ? '<' + tag + nextAttrs + ( /\/\s*$/.test(nextAttrs) ? '>' : ' />')
         : '<' + tag + nextAttrs + '>'
-      // selfClose 规范化
+      // Normalize selfClose
       const replacement = scanned.selfClose
         ? '<' + tag + nextAttrs.replace(/\s*\/\s*$/, '') + ' />'
         : '<' + tag + nextAttrs + '>'
@@ -202,7 +202,7 @@ function rewriteSlots(code) {
 }
 
 /**
- * 从 tagName 后扫描开标签属性，直到真正的 `>`（跳过引号与注释里的 >）
+ * Scan open-tag attrs after tagName until the real `>` (skip `>` inside quotes/comments)
  * @returns {{ attrs: string, end: number, selfClose: boolean } | null}
  */
 function scanOpenTagAttrs(src, nameEnd) {
@@ -236,7 +236,7 @@ function scanOpenTagAttrs(src, nameEnd) {
 }
 
 /**
- * 找到与 openStart 对齐的闭合标签结束位置（简单同名深度计数）
+ * Find closing-tag end aligned with openStart (simple same-name depth count)
  */
 function findMatchingClose(src, openEnd, tag) {
   const openRe = new RegExp('<' + tag + '\\b', 'gi')
@@ -250,7 +250,7 @@ function findMatchingClose(src, openEnd, tag) {
     const c = closeRe.exec(src)
     if (!c) return -1
     if (o && o.index < c.index) {
-      // 跳过注释/字符串误伤：仅当确是开标签
+      // Skip comment/string false hits: only when it is truly an open tag
       const after = o.index + o[0].length
       if (src[after] === '>' || /\s|\//.test(src[after] || '')) {
         depth += 1
@@ -268,8 +268,8 @@ function findMatchingClose(src, openEnd, tag) {
 }
 
 /**
- * 同节点 v-for + v-if → <template v-for> + 内层 v-if
- * :key 放在内层真实元素上（Vue2 禁止 template 上写 key；Vue3 也兼容）
+ * Same-node v-for + v-if → <template v-for> + inner v-if
+ * Put :key on the inner real element (Vue2 forbids key on template; Vue3 compatible too)
  */
 function rewriteVForVIf(code) {
   const changes = []
@@ -308,7 +308,7 @@ function rewriteVForVIf(code) {
     if (keyM) nextAttrs = nextAttrs.replace(keyM[0], '')
     nextAttrs = nextAttrs.replace(/<!--[\s\S]*?-->/g, '')
 
-    // key 放内层，兼容 Vue2
+    // Put key on inner element for Vue2 compatibility
     const keyAttr = keyM ? ' :key=' + keyM[1] + keyM[2] + keyM[1] : ''
     const wrapped =
       '<template v-for=' +
@@ -351,8 +351,8 @@ function rewriteVForVIf(code) {
 }
 
 /**
- * <keep-alive> 内 <component :is="x"> 若无 :key，补 :key="x"
- * （组合本身可脚本处理，不再当危险）
+ * Inside <keep-alive>, if <component :is="x"> lacks :key, add :key="x"
+ * (combo itself is script-handled; no longer treated as a risk)
  */
 function rewriteKeepAliveIsKey(code) {
   const changes = []
@@ -372,7 +372,7 @@ function rewriteKeepAliveIsKey(code) {
       /<(component|Component)(\s[^>]*?(?::is|v-bind:is)\s*=\s*(["'])([^"']*)\3[^>]*?)(\/?)\s*>/g,
       injectKey
     )
-    // 也处理非 component 标签上的 :is
+    // Also handle :is on non-component tags
     const next2 = nextInner.replace(
       /<([A-Za-z][\w.-]*)(\s[^>]*?(?::is|v-bind:is)\s*=\s*(["'])([^"']*)\3[^>]*?)(\/?)\s*>/g,
       (m, tag, attrStr, q, isExpr, slash) => {
@@ -388,8 +388,8 @@ function rewriteKeepAliveIsKey(code) {
 }
 
 /**
- * Vue2：禁止 <template v-for> 上写 :key，挪到第一个真实子元素。
- * （已有内层 :key 则只删 template 上的 key）
+ * Vue2: :key on <template v-for> is forbidden — move to first real child.
+ * (If inner :key already exists, only drop key on template)
  */
 function rewriteTemplateVForKey(code) {
   const changes = []
@@ -452,14 +452,15 @@ function migrateHtmlTemplate(code) {
   const a = rewriteSync(code)
   const b = rewriteNative(a.code)
   const c = rewriteSlots(b.code)
-  const d = rewriteVForVIf(c.code)
-  const e = rewriteTemplateVForKey(d.code)
-  const f = rewriteKeepAliveIsKey(e.code)
-  const g = migrateHtmlFiltersAndListeners(f.code)
+  // Same-node v-for+v-if is AI-owned (Vue3 key-on-template semantics); do not auto-split.
+  // Different-node v-for / v-if needs no migration.
+  const d = rewriteTemplateVForKey(c.code)
+  const e = rewriteKeepAliveIsKey(d.code)
+  const f = migrateHtmlFiltersAndListeners(e.code)
   return {
-    code: g.code,
-    changes: [].concat(a.changes, b.changes, c.changes, d.changes, e.changes, f.changes, g.changes),
-    filterNames: g.filterNames || [],
+    code: f.code,
+    changes: [].concat(a.changes, b.changes, c.changes, d.changes, e.changes, f.changes),
+    filterNames: f.filterNames || [],
   }
 }
 

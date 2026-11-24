@@ -1,12 +1,12 @@
 const { createPlugin } = require('../../src/pipeline/create-plugin')
 
 /**
- * 外部热插拔示例：在 pipeline 配置里
+ * External hot-plug example: in pipeline config
  * { use: './examples/plugins/hello-plugin.js', options: { banner: 'hi' } }
  */
 module.exports = createPlugin({
   name: 'hello',
-  description: '示例外部插件',
+  description: 'Example external plugin',
   version: '0.0.1',
   defaults: { banner: 'hello-from-external-plugin' },
   match(ctx) {

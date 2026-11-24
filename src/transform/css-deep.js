@@ -1,31 +1,60 @@
 /**
- * 深度选择器统一为 ::v-deep（Vue2 vue-loader15 + Vue3 均可用）
- * >>> /deep/ :deep() → ::v-deep
+ * Normalize Vue2 deep selectors to Vue3 `:deep(...)`.
+ *
+ * Handles:
+ *   ::v-deep .sel / ::v-deep.sel  → :deep(.sel)   (batch-replace style)
+ *   ::v-deep(.sel)                → :deep(.sel)
+ *   ::deep(.sel)                  → :deep(.sel)
+ *   >>> .sel / /deep/ .sel        → :deep(.sel)
+ *   leftover >>> / /deep/         → :deep
+ *
+ * Already-correct `:deep(...)` is left unchanged.
  */
+
+/** Selector after a deep combinator (same idea as the ::v-deep batch replace). */
+const DEEP_SEL =
+  '([.#*:\\[a-zA-Z_-][^,{\\n]*?)\\s*(?=,|\\{|$)'
+
 function migrateCssDeep(code) {
   const changes = []
   let out = String(code || '')
 
-  // :deep(.foo) → ::v-deep(.foo)
-  out = out.replace(/:deep\s*\(([^)]+)\)/g, (m, inner) => {
-    changes.push({ kind: 'deep-paren-from-colon', from: m.slice(0, 40) })
-    return '::v-deep(' + inner.trim() + ')'
+  // ::v-deep(.foo) / ::deep(.foo) → :deep(.foo)
+  out = out.replace(/::v-deep\s*\(([^)]+)\)/g, (m, inner) => {
+    changes.push({ kind: 'v-deep-paren', from: m.slice(0, 40) })
+    return ':deep(' + String(inner).trim() + ')'
+  })
+  out = out.replace(/::deep\s*\(([^)]+)\)/g, (m, inner) => {
+    changes.push({ kind: 'colon-deep-paren', from: m.slice(0, 40) })
+    return ':deep(' + String(inner).trim() + ')'
   })
 
-  // ::v-deep(.foo) 已是目标，保留
-  // ::v-deep .foo  /  /deep/ .foo  /  >>> .foo → ::v-deep .foo
-  out = out.replace(/(::v-deep|\/deep\/|>>>)\s+([^\{\};]+)/g, (m, kw, sel) => {
+  // ::v-deep\s*selector → :deep(selector)
+  // Find: ::v-deep\s*([.#*:\[a-zA-Z_-][^,{\n]*?)\s*(?=,|\{|$)
+  // Replace: :deep($1)
+  out = out.replace(new RegExp('::v-deep\\s*' + DEEP_SEL, 'g'), (m, sel) => {
     const s = String(sel).trim()
     if (!s) return m
-    if (kw === '::v-deep') return m
-    changes.push({ kind: 'deep-space', from: m.slice(0, 40) })
-    return '::v-deep ' + s
+    changes.push({ kind: 'v-deep-space', from: m.slice(0, 40) })
+    return ':deep(' + s + ')'
   })
 
-  // 仅 >>> 或 /deep/ 残留
+  // >>> selector / /deep/ selector → :deep(selector)
+  out = out.replace(new RegExp('(?:>>>|\\/deep\\/)\\s*' + DEEP_SEL, 'g'), (m, sel) => {
+    const s = String(sel).trim()
+    if (!s) return m
+    changes.push({ kind: 'deep-combinator', from: m.slice(0, 40) })
+    return ':deep(' + s + ')'
+  })
+
+  // Bare leftovers (no following selector captured)
+  out = out.replace(/::v-deep\b/g, () => {
+    changes.push({ kind: 'v-deep-token' })
+    return ':deep'
+  })
   out = out.replace(/(?:\/deep\/|>>>)/g, () => {
     changes.push({ kind: 'deep-token' })
-    return '::v-deep'
+    return ':deep'
   })
 
   return { code: out, changes }

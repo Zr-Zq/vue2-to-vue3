@@ -1,7 +1,7 @@
 /**
  * this.$children → __v23Children(this)
- * 注入 Vue3 近似实现（走 subTree 收集子组件 proxy）。
- * 无完美对等 API；脚本可改，但调用方语义需回归。
+ * Inject Vue3 approximate implementation (collect child proxies via subTree).
+ * No perfect equivalent API; script can rewrite, but call-site semantics need regression.
  */
 
 const HELPER_NAME = '__v23Children'
@@ -43,9 +43,9 @@ function migrateChildren(code) {
     return HELPER_NAME + '(this)'
   })
 
-  // 也处理 vm.$children / xxx.$children（标识. $children）
+  // Also handle vm.$children / xxx.$children (Identifier.$children)
   out = out.replace(/([A-Za-z_$][\w$]*)\.\$children\b/g, (m, id) => {
-    if (id === 'this') return m // 已处理
+    if (id === 'this') return m // already handled
     changes.push({ kind: 'children-to-helper', from: m, to: HELPER_NAME + '(' + id + ')' })
     return HELPER_NAME + '(' + id + ')'
   })
@@ -53,7 +53,7 @@ function migrateChildren(code) {
   if (!changes.length) return { code: src, changes: [] }
 
   if (!new RegExp('function\\s+' + HELPER_NAME + '\\b').test(out) && out.indexOf(HELPER) === -1) {
-    // 插到 script 内容顶部（import 之后）
+    // Insert at top of script body (after imports)
     const lines = out.split(/\r?\n/)
     let insertAt = 0
     for (let i = 0; i < lines.length; i += 1) {

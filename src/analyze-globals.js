@@ -42,11 +42,11 @@ function argPreview(node, maxLen) {
 }
 
 /**
- * 登记「注册 / 修改」点（不登记调用点）：
+ * Record registration / mutation sites (not call sites):
  * - Vue.prototype.x = …
  * - Vue.component / directive / filter / mixin / use / extend
  * - Vue.config.*
- * - app.config.globalProperties (Vue3 预留)
+ * - app.config.globalProperties (Vue3 reserved)
  * - window.xxx = … / globalThis.xxx
  * - Object.defineProperty(Vue.prototype / window, …)
  */
@@ -105,7 +105,7 @@ function analyzeGlobals(ast, meta) {
         (chain[0] === 'window' || chain[0] === 'globalThis' || chain[0] === 'global') &&
         chain.length >= 2
       ) {
-        // 忽略常见噪音：window.location / document 读写过多——只记「赋值到新属性」
+        // Skip common noise: window.location / document — only record assignments to new properties
         const skip = new Set(['location', 'document', 'history', 'navigator', 'localStorage', 'sessionStorage'])
         if (skip.has(chain[1])) return
         push({
@@ -136,12 +136,12 @@ function analyzeGlobals(ast, meta) {
           observable: 'vue.observable',
           set: 'vue.set',
           delete: 'vue.delete',
-          nextTick: null, // 调用非注册，跳过
+          nextTick: null, // Call site, not registration — skip
           compile: null,
           version: null,
         }
         if (!(method in registryMethods) || registryMethods[method] === null) {
-          // 其它 Vue.xxx 若是赋值式调用仍可记 use/mixin 等
+          // Other Vue.xxx calls are ignored here; use/mixin etc. are recorded above
         }
         const kind = registryMethods[method]
         if (kind) {
@@ -237,13 +237,13 @@ function analyzeGlobals(ast, meta) {
         }
       }
 
-      // app.config.globalProperties.xxx = … 已在 Assignment；这里抓 createApp 后的 .component/.use
+      // app.config.globalProperties.xxx = … handled in Assignment; catch .component/.use after createApp
       // app.component / app.use / app.directive / app.mixin (Vue3)
       if (t.isMemberExpression(callee) && t.isIdentifier(callee.property)) {
         const method = callee.property.name
         const vue3 = ['component', 'directive', 'mixin', 'use', 'provide']
         if (vue3.includes(method) && t.isIdentifier(callee.object)) {
-          // 启发式：对象名含 app
+          // Heuristic: object name contains "app"
           const obj = callee.object.name
           if (/app/i.test(obj) && obj !== 'Vue') {
             push({
@@ -264,7 +264,7 @@ function analyzeGlobals(ast, meta) {
 }
 
 /**
- * 按 api/name 聚合：同一全局在哪些文件登记过
+ * Aggregate by api/name: which files registered the same global
  */
 function indexGlobals(records) {
   const byKey = new Map()

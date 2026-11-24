@@ -4,7 +4,7 @@ const { applySfcTransforms } = require('../../transform/apply-sfc')
 
 module.exports = createPlugin({
   name: 'migrate-api-compat',
-  description: '生命周期/$set/$delete/$listeners/$scopedSlots/productionTip',
+  description: 'lifecycle/$set/$delete/$listeners/$scopedSlots/productionTip',
   version: '0.1.0',
   defaults: { enabled: true },
   match(ctx, api) {
@@ -24,7 +24,7 @@ module.exports = createPlugin({
         ctx.report({
           level: 'info',
           plugin: 'migrate-api-compat',
-          message: 'api-compat 改写 ×' + result.changes.length,
+          message: 'api-compat rewrites ×' + result.changes.length,
         })
       }
       return
@@ -35,7 +35,7 @@ module.exports = createPlugin({
       ctx.report({
         level: 'info',
         plugin: 'migrate-api-compat',
-        message: 'api-compat 改写 ×' + result.changes.length,
+        message: 'api-compat rewrites ×' + result.changes.length,
       })
     }
   },

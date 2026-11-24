@@ -1,23 +1,23 @@
 #!/usr/bin/env node
 /**
- * 迁移总入口（脚本侧）
+ * Migration entry point (script side)
  *
- * 约定用法：
- *   --from  被迁移的源项目根
- *   --src   源内要拷的目录（相对 from，默认 src）
- *   --to    迁移目标根目录（底座）
+ * Intended usage:
+ *   --from  Source project root being migrated
+ *   --src   Directory inside source (relative to from, default src)
+ *   --to    Migration target root (base project)
  *
- * 阶段：
- *   1 analyze   分析源项目 → <from>/.v23 与报告
- *   2 scaffold  （可选）拷纯 Vue 底座到 --to；正常由 AI 先建好底座
- *   3 copy      按相对路径 copy 到 --to，已存在则先备份再覆盖
- *   4 pipeline  脚本自动迁移 + 标记 AI-TODO
- *   5 todos     输出 AI 待改清单（到此脚本暂停，交给 AI）
- *   6 check     AI 改完后：缺引用检查
- *   7 pipeline  可再次 --step pipeline 跑下一轮
+ * Stages:
+ *   1 analyze   Analyze source → <from>/.v23 and reports
+ *   2 scaffold  Legacy only — real runs: AI builds Vite+Vue3 base (env + project config; scripts never touch env)
+ *   3 copy      Copy by relative path into --to; backup then overwrite if exists
+ *   4 pipeline  Deterministic syntax migration + AI-TODO (no env / project-config transforms)
+ *   5 todos     Emit AI todo list (script pauses here for AI)
+ *   6 check     After AI edits: missing-refs check
+ *   7 pipeline  May re-run --step pipeline for another round
  *
- *   --step script  = analyze + copy + pipeline + todos（默认；不含 scaffold）
- *   --step all     = scaffold(若需要) + script（仍停在 AI 交接）
+ *   --step script  = analyze + copy + pipeline + todos (default; no scaffold)
+ *   --step all     = same as script if base exists; otherwise hand off for AI Vue3 base
  */
 const fs = require('fs')
 const path = require('path')
@@ -35,33 +35,33 @@ const { ensureBackupBatch, backupIfExists } = require('../src/backup')
 const BIN = __dirname
 
 function printHelp() {
-  console.log(`Usage: v23-migrate --from <源项目根> --to <目标根> [options]
+  console.log(`Usage: v23-migrate --from <sourceRoot> --to <targetRoot> [options]
 
-工作流：
-  分析源项目 →（AI 建底座）→ copy(备份后覆盖) → 流水线自动改+打 AI-TODO
-  →【暂停】AI 改标记 → check-refs → 可再跑 pipeline
+Workflow:
+  Analyze source → (AI builds base) → copy (backup then overwrite) → pipeline auto-fix + AI-TODO
+  → [PAUSE] AI edits markers → check-refs → may re-run pipeline
 
 Required:
-  --from <dir>          被迁移的 Vue2 项目根
-  --to <dir>            迁移到的目标根（底座工程）
+  --from <dir>          Vue2 source project root
+  --to <dir>            Target root (base project)
 
 Options:
-  --src <rel>           源内目录，相对 --from（默认 src）
-  --dest-src <rel>      目标内目录，相对 --to（默认与 --src 相同）
+  --src <rel>           Source dir relative to --from (default src)
+  --dest-src <rel>      Target dir relative to --to (default same as --src)
   --step <name>         analyze|scaffold|copy|pipeline|todos|check|script|all
-                        默认 script（analyze+copy+pipeline+todos）
-  --scaffold            step=all/script 时若目标不像工程则自动拷底座
-  --force-scaffold      强制用模板覆盖拷底座（慎用）
-  --template <dir>      底座模板（默认仓库 1.pure-vue-app）
-  --no-backup           copy 时不备份已存在文件
-  --dry-run             copy 只演练
+                        default script (analyze+copy+pipeline+todos)
+  --scaffold            (discouraged) Copy legacy template if target has no project; prefer AI Vue3 base
+  --force-scaffold      Force overwrite-copy of the template base (use with care)
+  --template <dir>      Legacy template (default repo 1.pure-vue-app)
+  --no-backup           Do not back up existing files on copy
+  --dry-run             Copy dry-run only
   -h, --help
 
 Examples:
+  # After AI created a Vite+Vue3 base (incl. env) at --to:
   v23-migrate --from D:/old-app --src src --to D:/new-app
   v23-migrate --from D:/old-app --to D:/new-app --step analyze
-  v23-migrate --from D:/old-app --to D:/new-app --scaffold --step all
-  # AI 改完 AI-TODO 后：
+  # After AI finishes AI-TODO items:
   v23-migrate --to D:/new-app --step check
   v23-migrate --to D:/new-app --step pipeline
 `)
@@ -106,7 +106,7 @@ function runNode(script, argv, label) {
     stdio: 'inherit',
   })
   if (res.status !== 0) {
-    throw new Error(label + ' 失败，exit=' + res.status)
+    throw new Error(label + ' failed, exit=' + res.status)
   }
 }
 
@@ -121,22 +121,22 @@ function looksLikeProject(dir) {
 }
 
 function stepAnalyze(fromRoot) {
-  console.log('\n=== 1. 分析源项目 ===')
+  console.log('\n=== 1. Analyze source project ===')
   const written = writeAnalyze(fromRoot)
-  console.log('源分析完成 →', written.graphPath)
+  console.log('Source analysis done →', written.graphPath)
   console.log('files=', written.graph.stats && written.graph.stats.fileCount)
   return written
 }
 
 function stepScaffold(toRoot, template, force) {
-  console.log('\n=== 2. 拷贝迁移底座 ===')
+  console.log('\n=== 2. Copy migration base ===')
   if (looksLikeProject(toRoot) && !force) {
-    console.log('目标已有工程结构，跳过 scaffold（需要强制请加 --force-scaffold）')
+    console.log('Target already looks like a project; skip scaffold (use --force-scaffold to force)')
     return { skipped: true }
   }
   const from = path.resolve(template || path.join(REPO_ROOT, '1.pure-vue-app'))
   runNode('scaffold.js', ['--from', from, '--to', toRoot], 'scaffold')
-  // 写一份迁移元数据
+  // Write migration metadata
   ensureProjectWorkDir(toRoot)
   return { skipped: false, template: from }
 }
@@ -169,11 +169,11 @@ function copyTreeWithBackup(fromAbs, toAbs, baseRoot, dryRun, backup, batch) {
 }
 
 function stepCopy(args) {
-  console.log('\n=== 3. Copy 源码到目标（已存在则备份）===')
+  console.log('\n=== 3. Copy source into target (backup if exists) ===')
   const fromDir = path.resolve(args.from, args.src)
   const toDir = path.resolve(args.to, args.destSrc)
   if (!fs.existsSync(fromDir)) {
-    throw new Error('源目录不存在: ' + fromDir)
+    throw new Error('Source directory not found: ' + fromDir)
   }
   const result = ingestFiles({
     from: fromDir,
@@ -183,17 +183,17 @@ function stepCopy(args) {
     dryRun: args.dryRun,
     backup: args.backup,
   })
-  console.log('源:', fromDir)
-  console.log('目标:', toDir)
-  console.log('文件:', result.files.length)
-  console.log('备份:', result.backedUpCount, result.backupDir || '(无)')
+  console.log('Source:', fromDir)
+  console.log('Target:', toDir)
+  console.log('Files:', result.files.length)
+  console.log('Backups:', result.backedUpCount, result.backupDir || '(none)')
 
-  // 根级旁路目录：script / test / style / mock …（整目录拷贝，不限扩展名）
+  // Root-level sidecar dirs: script / test / style / mock … (whole-dir copy, any extension)
   const sidecars = listSidecarDirs(args.from)
   const sidecarResults = []
   if (sidecars.length) {
     const batch = args.backup && !args.dryRun ? ensureBackupBatch(args.to) : { dir: null }
-    console.log('旁路目录:', sidecars.join(', '))
+    console.log('Sidecar dirs:', sidecars.join(', '))
     sidecars.forEach((name) => {
       if (isNeverCopyDir(name)) {
         console.log('  -', name, '→ skip (never-copy)')
@@ -213,7 +213,7 @@ function stepCopy(args) {
       sidecarResults.push({ name, files: side.files.length, backedUpCount: side.backedUpCount })
     })
   } else {
-    console.log('旁路目录: (无)')
+    console.log('Sidecar dirs: (none)')
   }
 
   ensureProjectWorkDir(args.to)
@@ -244,35 +244,41 @@ function stepCopy(args) {
 }
 
 function stepPipeline(toRoot) {
-  console.log('\n=== 4. 流水线：自动迁移 + 标记 AI-TODO ===')
+  console.log('\n=== 4. Pipeline: auto-migrate + mark AI-TODO ===')
   runNode('run.js', [toRoot, '--keep', '--write'], 'pipeline')
 }
 
 function stepTodos(toRoot) {
-  console.log('\n=== 5. 汇总 AI-TODO（脚本到此暂停）===')
+  console.log('\n=== 5. Summarize AI-TODO (script pauses here) ===')
   runNode('todos.js', [toRoot], 'todos')
   const md = path.join(projectWorkDir(toRoot), 'ai-todos.md')
   const json = path.join(projectWorkDir(toRoot), 'ai-todos.json')
-  console.log('\n======== AI 交接 ========')
-  console.log('请 AI 打开并逐项处理:')
+  console.log('\n======== AI handoff ========')
+  console.log('Ask AI to open and process each item:')
   console.log('  ', fs.existsSync(md) ? md : json)
-  console.log('说明文档:')
-  console.log('  ', path.join(REPO_ROOT, '2to3/docs/workflow.md'))
-  console.log('  ', path.join(REPO_ROOT, '2to3/docs/html-format.md'))
-  console.log('  ', path.join(REPO_ROOT, '2to3/docs/cannot-fully-auto.md'))
-  console.log('AI 改完后执行:')
+  console.log('Docs (English — AI should read these):')
+  console.log('  ', path.join(REPO_ROOT, '2to3/docs/en/workflow.md'))
+  console.log('  ', path.join(REPO_ROOT, '2to3/docs/en/html-format.md'))
+  console.log('  ', path.join(REPO_ROOT, '2to3/docs/en/cannot-fully-auto.md'))
+  console.log('  ', path.join(REPO_ROOT, '2to3/docs/en/ai-scaffold-notes.md'))
+  const reportMd = path.join(projectWorkDir(toRoot), 'migration-report.md')
+  if (fs.existsSync(reportMd)) {
+    console.log('Ownership table (AI vs script vs compat):')
+    console.log('  ', reportMd)
+  }
+  console.log('After AI finishes:')
   console.log('  node', path.join(BIN, 'migrate.js'), '--to', toRoot, '--step check')
-  console.log('若需再跑一轮脚本迁移:')
+  console.log('For another script migration round:')
   console.log('  node', path.join(BIN, 'migrate.js'), '--to', toRoot, '--step pipeline')
   console.log('========================\n')
 }
 
 function stepCheck(toRoot) {
-  console.log('\n=== 6. 缺引用检查 ===')
+  console.log('\n=== 6. Missing-refs check ===')
   runNode('check-refs.js', [toRoot, '--all'], 'check-refs')
-  console.log('检查报告:', path.join(projectWorkDir(toRoot), 'missing-refs-for-ai.md'))
-  console.log('若有缺失：AI 补文件/改 import 后复跑 --step check')
-  console.log('通过后可 --step pipeline 进入下一轮，或 npm run build 验收')
+  console.log('Check report:', path.join(projectWorkDir(toRoot), 'missing-refs-for-ai.md'))
+  console.log('If missing: AI adds files / fixes imports, then re-run --step check')
+  console.log('When green: --step pipeline for next round, or npm run build to verify')
 }
 
 async function main() {
@@ -286,12 +292,12 @@ async function main() {
   const needFrom = ['analyze', 'copy', 'script', 'all'].includes(step)
   if (needFrom && !args.from) {
     printHelp()
-    console.error('\n缺少 --from')
+    console.error('\nMissing --from')
     process.exit(1)
   }
   if (!args.to && step !== 'analyze') {
     printHelp()
-    console.error('\n缺少 --to')
+    console.error('\nMissing --to')
     process.exit(1)
   }
 
@@ -322,17 +328,15 @@ async function main() {
       stepCheck(args.to)
     } else if (step === 'script' || step === 'all') {
       stepAnalyze(args.from)
-      const needScaffold =
-        args.forceScaffold ||
-        args.scaffold ||
-        (step === 'all' && !looksLikeProject(args.to))
+      // Only scaffold when explicitly requested; otherwise wait for AI Vue3 base
+      const needScaffold = args.forceScaffold || args.scaffold
       if (needScaffold) {
         stepScaffold(args.to, args.template, args.forceScaffold)
       } else if (!looksLikeProject(args.to)) {
-        console.log('\n=== 2. 底座（等待 AI）===')
-        console.log('目标尚无工程结构:', args.to)
-        console.log('请 AI 先创建 Vue3 底座，或加 --scaffold 从模板拷贝后再继续。')
-        console.log('建好后复跑:')
+        console.log('\n=== 2. Base (waiting for AI) ===')
+        console.log('Target has no project structure yet:', args.to)
+        console.log('Ask AI to create a Vite+Vue3 base (incl. .env* / project config). Do not rely on --scaffold for real migrations.')
+        console.log('After the base exists, re-run:')
         console.log(
           '  node',
           path.join(BIN, 'migrate.js'),
@@ -344,7 +348,7 @@ async function main() {
           args.to,
           '--step copy'
         )
-        console.log('然后: --step pipeline && --step todos')
+        console.log('Then: --step pipeline && --step todos')
         ensureProjectWorkDir(args.to)
         fs.writeFileSync(
           path.join(projectWorkDir(args.to), 'migrate-state.json'),
@@ -353,15 +357,15 @@ async function main() {
         )
         return
       } else {
-        console.log('\n=== 2. 底座 ===')
-        console.log('使用已有目标工程:', args.to)
+        console.log('\n=== 2. Base ===')
+        console.log('Using existing target project:', args.to)
       }
       stepCopy(args)
       stepPipeline(args.to)
       stepTodos(args.to)
       state.handoff = 'ai'
     } else {
-      console.error('未知 --step:', step)
+      console.error('Unknown --step:', step)
       printHelp()
       process.exit(1)
     }
@@ -375,7 +379,7 @@ async function main() {
       )
     }
   } catch (e) {
-    console.error('\n失败:', e.message || e)
+    console.error('\nFailed:', e.message || e)
     process.exit(1)
   }
 }

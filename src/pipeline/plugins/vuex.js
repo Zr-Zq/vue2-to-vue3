@@ -1,11 +1,11 @@
 const { createPlugin } = require('../create-plugin')
 
 /**
- * Vuex → 兼容/Pinia 迁移插件位
+ * Vuex → compat / Pinia migration plugin slot.
  */
 module.exports = createPlugin({
   name: 'vuex',
-  description: 'Vuex 用法检测与迁移（可插拔）',
+  description: 'Vuex usage detect and migrate (pluggable)',
   version: '0.1.0',
   defaults: { mode: 'detect' },
   match(ctx) {
@@ -35,14 +35,14 @@ module.exports = createPlugin({
       message: 'Vuex: ' + (hits.join(', ') || 'usage'),
     })
 
-    // 可借助前置图：谁注册了 Vue.use(Vuex)
+    // Can use preflight graph: who registered Vue.use(Vuex)
     const reg = api.lookup && api.lookup('Vuex')
     if (reg && reg.globals && reg.globals.length) {
       ctx.report({
         level: 'info',
         plugin: 'vuex',
         message:
-          '全局登记命中 Vuex: ' +
+          'Global registration hits Vuex: ' +
           reg.globals
             .map((g) => g.registrations.map((r) => r.file).join(','))
             .join('; '),

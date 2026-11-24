@@ -4,45 +4,51 @@ const { createPlugin } = require('../create-plugin')
 const { summarizeRisks, ensureRiskStore } = require('../risk/helpers')
 const { ensureProjectWorkDir, projectWorkDir } = require('../../paths')
 
-/** 不可完整自动处理的类别说明（给使用方的固定清单，写入报告） */
+/** Categories that cannot be fully automated (fixed list for consumers; written into the report) */
 const CANNOT_FULLY_AUTO = [
   {
-    category: 'instance-api',
-    title: '$parent / $root 等实例树 API',
+    category: 'v-for-v-if',
+    title: 'Same-node v-for + v-if',
     reason:
-      '依赖运行时组件树；$children/$listeners/$scopedSlots 已脚本处理，$parent/$root 仍需人工',
+      'Only same-element combo needs migration; AI chooses Vue3 shape (<template v-for :key> + inner v-if). Different-node v-for/v-if needs no change',
+  },
+  {
+    category: 'instance-api',
+    title: 'Instance tree APIs such as $parent / $root',
+    reason:
+      'Depends on the runtime component tree; $children/$listeners/$scopedSlots/$on/$off/$once are script-handled, $parent/$root still need humans',
   },
   {
     category: 'props-mutation',
-    title: '子组件修改 props（间接/别名）',
-    reason: '解构、别名、透传后再改，静态会漏检',
+    title: 'Child mutates props (indirect / aliases)',
+    reason: 'Destructuring, aliases, and mutate-after-pass-through can be missed statically',
   },
   {
     category: 'mixin-collision',
-    title: 'mixin 同名合并优先级 / 全局 mixin 注入',
-    reason: '合并策略与影响面需产品决策，不能盲合并',
+    title: 'Mixin same-name merge priority / global mixin injection',
+    reason: 'Merge strategy and blast radius need product decisions; do not merge blindly',
   },
   {
     category: 'global-side-effect',
-    title: 'Vue.mixin / Vue.config / Vue.prototype 全局副作用',
+    title: 'Vue.mixin / Vue.config / Vue.prototype global side effects',
     reason:
-      '需迁到 app 级 API；productionTip/silent 已脚本删除，mixin/prototype/keyCodes 仍需人工',
+      'Move to app-level APIs; productionTip/silent already removed by scripts; mixin/prototype/keyCodes still need humans',
   },
   {
     category: 'setup-mix',
-    title: 'setup 与 Options 混用策略',
-    reason: '继续混用或全 Composition 是架构选择',
+    title: 'setup mixed with Options strategy',
+    reason: 'Keep mixing vs full Composition is an architecture choice',
   },
   {
     category: 'provide-primitive',
-    title: 'provide 原始类型不响应',
-    reason: '包成 ref 会改变所有 inject 方的取值方式',
+    title: 'provide of primitives is not reactive',
+    reason: 'Wrapping in ref changes how every inject site reads the value',
   },
 ]
 
 module.exports = createPlugin({
   name: 'risk-summary',
-  description: '汇总风险并写入 .v23/risks.json',
+  description: 'Summarize risks and write .v23/risks.json',
   version: '0.1.0',
   match() {
     return false
@@ -82,20 +88,20 @@ module.exports = createPlugin({
       'utf8'
     )
 
-    // 给人看的短清单
+    // Short human-readable checklist
     const md = []
-    md.push('# Vue2→Vue3 前置风险报告')
+    md.push('# Vue2→Vue3 preflight risk report')
     md.push('')
-    md.push('- 总计: ' + summary.total)
-    md.push('- 其中 HTML/template: ' + htmlRisks.length)
+    md.push('- Total: ' + summary.total)
+    md.push('- HTML/template: ' + htmlRisks.length)
     md.push('- auto yes/partial/no: ' + summary.byAuto.yes + '/' + summary.byAuto.partial + '/' + summary.byAuto.no)
     md.push('')
-    md.push('## 按类别')
+    md.push('## By category')
     Object.keys(summary.byCategory)
       .sort()
       .forEach((k) => md.push('- ' + k + ': ' + summary.byCategory[k]))
     md.push('')
-    md.push('## 无法完整自动处理（需你方方案）')
+    md.push('## Cannot fully automate (needs your plan)')
     CANNOT_FULLY_AUTO.forEach((c, i) => {
       md.push((i + 1) + '. **' + c.title + '** (`' + c.category + '`)')
       md.push('   - ' + c.reason)
@@ -104,8 +110,8 @@ module.exports = createPlugin({
 
     project.shared.risksReportPath = risksPath
     if (project.config && project.config.verbose) {
-      console.log('[risk-summary] 写入', risksPath, 'total=', summary.total)
-      console.log('[risk-summary] 工作目录', projectWorkDir(project.root))
+      console.log('[risk-summary] wrote', risksPath, 'total=', summary.total)
+      console.log('[risk-summary] workDir', projectWorkDir(project.root))
     }
   },
 })

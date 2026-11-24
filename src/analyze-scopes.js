@@ -41,11 +41,11 @@ function scopeTypeName(block, isModule) {
 }
 
 /**
- * 基于 Babel Scope bindings 构建作用域树。
+ * Build a scope tree from Babel Scope bindings.
  * layer:
- * - file-top-import  文件顶层导入
- * - file-top-decl    文件顶部声明
- * - function-local-decl 函数/块内声明（含遮蔽）
+ * - file-top-import  file-top imports
+ * - file-top-decl    file-top declarations
+ * - function-local-decl function/block locals (incl. shadowing)
  */
 function analyzeScopes(ast) {
   const empty = {
@@ -114,21 +114,21 @@ function analyzeScopes(ast) {
   root.type = 'module'
   root.name = '<module>'
 
-  // 收集所有有独立 scope 的节点，挂到父 scope 节点下
+  // Collect nodes with their own scope; attach under parent scope node
   const seen = new WeakSet()
   seen.add(programPath.scope)
 
   programPath.traverse({
     enter(p) {
-      // 只处理创建了新 scope 的节点
+      // Only nodes that create a new scope
       if (!p.scope || p.scope === p.parentPath.scope) return
       if (seen.has(p.scope)) return
-      // 跳过 Program
+      // Skip Program
       if (t.isProgram(p.node)) return
       seen.add(p.scope)
 
       const childNode = makeNode(p.scope, false)
-      // 找最近已建的父 scope 节点
+      // Find nearest already-built parent scope node
       let parentScope = p.scope.parent
       let parentNode = null
       while (parentScope) {
@@ -139,7 +139,7 @@ function analyzeScopes(ast) {
         parentScope = parentScope.parent
       }
       if (parentNode) {
-        // 避免重复挂载
+        // Avoid duplicate attachment
         if (!parentNode.children.includes(childNode)) {
           parentNode.children.push(childNode)
         }

@@ -33,7 +33,7 @@ function loadProjectConfig(projectRoot) {
     }
   })
 
-  // webpack.config.js 文本抽 alias（不执行配置）
+  // Extract alias from webpack.config.js text (do not execute the config)
   const webpackPath = path.join(root, 'webpack.config.js')
   if (fs.existsSync(webpackPath)) {
     try {

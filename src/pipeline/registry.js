@@ -2,7 +2,7 @@ const path = require('path')
 const { createPlugin } = require('./create-plugin')
 
 /**
- * 插件注册表：内置 + 外部路径热插拔
+ * Plugin registry: builtins + external path hot-plug.
  */
 function createRegistry() {
   const builtins = new Map()
@@ -27,11 +27,11 @@ function createRegistry() {
   }
 
   /**
-   * 解析配置项为 { plugin, options, enabled }
-   * 支持：
+   * Resolve a config entry to { plugin, options, enabled }.
+   * Supports:
    * - 'scss'
    * - { name: 'scss', enabled: false, options: {} }
-   * - { use: './plugins/my.js', options: {} }  外部热插拔
+   * - { use: './plugins/my.js', options: {} }  external hot-plug
    * - { use: requireable, name?, options? }
    */
   function resolveEntry(entry, fromDir) {
@@ -40,12 +40,12 @@ function createRegistry() {
         return loadExternal(entry, fromDir, {})
       }
       const plugin = get(entry)
-      if (!plugin) throw new Error('未知内置插件: ' + entry + '；可用: ' + list().map((x) => x.name).join(', '))
+      if (!plugin) throw new Error('Unknown built-in plugin: ' + entry + '; available: ' + list().map((x) => x.name).join(', '))
       return { plugin, options: {}, enabled: true }
     }
 
     if (!entry || typeof entry !== 'object') {
-      throw new Error('非法插件配置: ' + String(entry))
+      throw new Error('Invalid plugin config: ' + String(entry))
     }
 
     const enabled = entry.enabled !== false
@@ -58,9 +58,9 @@ function createRegistry() {
       return loaded
     }
 
-    if (!entry.name) throw new Error('插件配置缺少 name 或 use')
+    if (!entry.name) throw new Error('plugin config missing name or use')
     const plugin = get(entry.name)
-    if (!plugin) throw new Error('未知内置插件: ' + entry.name)
+    if (!plugin) throw new Error('Unknown built-in plugin: ' + entry.name)
     return { plugin, options, enabled }
   }
 
@@ -80,7 +80,7 @@ function createRegistry() {
   }
 
   /**
-   * 按配置顺序展开启用的插件链
+   * Expand the enabled plugin chain in config order.
    */
   function resolvePipeline(pipelineConfig, fromDir) {
     const stages = []
@@ -90,8 +90,8 @@ function createRegistry() {
       if (!resolved.enabled) return
       const name = resolved.plugin.name
       if (seen.has(name)) {
-        // 允许同名？默认禁止，避免顺序混乱
-        throw new Error('流水线中重复插件: ' + name + ' @#' + idx)
+        // Allow duplicates? Default no — avoids ambiguous order
+        throw new Error('Duplicate plugin in pipeline: ' + name + ' @#' + idx)
       }
       seen.add(name)
       stages.push({

@@ -5,7 +5,7 @@ const WATCH = new Set(['$parent', '$children', '$root', '$listeners', '$scopedSl
 
 module.exports = createPlugin({
   name: 'risk-instance-api',
-  description: '检出 this.$parent/$children/$root/$listeners/$scopedSlots',
+  description: 'Detect this.$parent/$children/$root/$listeners/$scopedSlots',
   version: '0.1.0',
   match(ctx) {
     return /\.(vue|js|jsx|ts|tsx|mjs|cjs)$/.test(ctx.file.ext) || ctx.file.kind === 'vue'
@@ -18,7 +18,7 @@ module.exports = createPlugin({
           if (!chain || !chain.length) return
           const head = chain[0]
           if (!WATCH.has(head)) return
-          // 只记读取/调用的根 API
+          // Record root APIs that are read or called only
           const scripted =
             head === '$listeners' || head === '$scopedSlots' || head === '$children'
           pushRisk(api.project, {
@@ -27,12 +27,12 @@ module.exports = createPlugin({
             level: head === '$parent' || head === '$root' ? 'block' : scripted ? 'info' : 'warn',
             auto: scripted ? 'yes' : 'no',
             file: ctx.file.path,
-            message: '使用实例 API this.' + chain.join('.'),
+            message: 'Uses instance API this.' + chain.join('.'),
             loc: locOf(p.node),
             evidence: 'this.' + chain.join('.'),
             hint: scripted
-              ? '已由 migrate-api-compat / migrate-children 脚本处理'
-              : '运行时组件树依赖，不宜盲改',
+              ? 'Handled by migrate-api-compat / migrate-children'
+              : 'Runtime component-tree dependency; do not rewrite blindly',
           })
           p.skip()
         },

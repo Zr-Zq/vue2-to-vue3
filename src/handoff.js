@@ -1,8 +1,8 @@
 /**
- * HTML 流 ↔ JS 流交接文件：.v23/handoff.json
+ * HTML stream ↔ JS stream handoff file: .v23/handoff.json
  *
- * HTML 侧改模板后若依赖 JS 补齐（如 |filter → f() 需 filters→methods），写入 pending item。
- * JS 侧消费；找不到对应 options 就 skip，不报错。
+ * After HTML rewrites the template, if JS must finish the job (e.g. |filter → f() needs filters→methods), write a pending item.
+ * JS side consumes it; if matching options are missing, skip without error.
  */
 const fs = require('fs')
 const path = require('path')
@@ -11,14 +11,14 @@ const { ensureProjectWorkDir, projectWorkDir } = require('./paths')
 const HANDOFF_VERSION = 1
 const HANDOFF_FILENAME = 'handoff.json'
 
-/** 流划分（文档 + 配置共用） */
+/** Stream split (shared by docs + config) */
 const STREAMS = {
   html: {
-    description: '只改 template / style（不碰业务 JS 语义）',
+    description: 'Rewrite template / style only (do not touch business JS semantics)',
     plugins: ['migrate-html', 'migrate-deep', 'migrate-functional'],
   },
   js: {
-    description: '只改 script / 选项对象；可消费 HTML 交接项',
+    description: 'Rewrite script / options objects; may consume HTML handoff items',
     plugins: [
       'migrate-render-h',
       'migrate-api-compat',
@@ -27,6 +27,7 @@ const STREAMS = {
       'migrate-extend',
       'migrate-mount',
       'migrate-children',
+      'migrate-instance-events',
     ],
   },
 }
@@ -40,7 +41,7 @@ function emptyHandoff() {
     version: HANDOFF_VERSION,
     updatedAt: null,
     description:
-      'HTML→JS 交接。HTML 流写 pending；JS 流消费。status=skipped 表示 JS 侧找不到可改对象（忽略即可）。',
+      'HTML→JS handoff. HTML stream writes pending; JS stream consumes. status=skipped means JS found no editable target (safe to ignore).',
     streams: STREAMS,
     items: [],
   }
@@ -85,7 +86,7 @@ function ensureSharedHandoff(project) {
 }
 
 /**
- * HTML 流登记：模板已把 |name 改成 name()，请 JS 流把 filters 并入 methods
+ * HTML stream registration: template already rewrote |name to name(); JS stream should merge filters into methods
  */
 function addFiltersHandoff(project, fileRel, filterNames) {
   const names = uniqueNames(filterNames)
@@ -99,13 +100,13 @@ function addFiltersHandoff(project, fileRel, filterNames) {
     file: fileRel,
     filters: names,
     status: 'pending',
-    note: '模板 |filter 已改为函数调用，需 options.filters → methods',
+    note: 'Template |filter rewritten to function call; need options.filters → methods',
     updatedAt: new Date().toISOString(),
   }
   const key = itemKey(item)
   const idx = data.items.findIndex((x) => itemKey(x) === key)
   if (idx >= 0) {
-    // HTML 再次登记时：done 保持；skipped/pending 重置为 pending（允许重跑）
+    // On re-register from HTML: keep done; reset skipped/pending to pending (allow re-run)
     if (data.items[idx].status === 'done') return data.items[idx]
     data.items[idx] = Object.assign({}, data.items[idx], item, { status: 'pending' })
   } else {
@@ -115,7 +116,7 @@ function addFiltersHandoff(project, fileRel, filterNames) {
 }
 
 /**
- * JS 流回写状态
+ * JS stream writes back status
  * @param {'done'|'skipped'|'pending'} status
  */
 function resolveHandoffItem(project, { file, kind, status, note, filters }) {

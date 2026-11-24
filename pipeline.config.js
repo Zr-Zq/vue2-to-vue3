@@ -1,9 +1,9 @@
 /**
- * 2to3 默认流水线配置（可复制到目标项目为 v23.pipeline.js）
+ * 2to3 default pipeline config (copy into the target project as v23.pipeline.js)
  *
- * - 数组顺序 = 执行顺序
- * - enabled: false 关闭某插件
- * - use: 外部文件路径实现热插拔
+ * - Array order = execution order
+ * - enabled: false disables a plugin
+ * - use: external file path for hot-plugging
  * - options.mode: detect | annotate
  */
 module.exports = {
@@ -17,7 +17,7 @@ module.exports = {
     { name: 'vuex', enabled: true, options: { mode: 'detect' } },
     { name: 'router', enabled: true, options: { mode: 'detect' } },
     { name: 'element', enabled: true, options: { mode: 'detect' } },
-    // 热插拔示例（默认关）：
+    // Hot-plug example (off by default):
     // { use: './examples/plugins/hello-plugin.js', enabled: true, options: { mode: 'detect' } },
   ],
   include: ['src/**/*.{js,jsx,ts,tsx,vue,mjs,cjs,scss,sass,less,css}'],

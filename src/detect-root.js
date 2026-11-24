@@ -12,7 +12,7 @@ const MARKERS = [
 ]
 
 /**
- * 从文件或目录向上找项目根（含 package.json 或路径配置文件）
+ * Walk up from a file or directory to find the project root (package.json or path config)
  */
 function detectProjectRoot(startPath) {
   let cur = path.resolve(startPath)
@@ -24,7 +24,7 @@ function detectProjectRoot(startPath) {
     const hits = MARKERS.filter((m) => fs.existsSync(path.join(cur, m)))
     if (hits.includes('package.json') || hits.length >= 1) {
       roots.push({ root: cur, markers: hits })
-      // 优先带 package.json 的最近层
+      // Prefer nearest layer that has package.json
       if (hits.includes('package.json')) return cur
     }
     const parent = path.dirname(cur)

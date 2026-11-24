@@ -1,25 +1,33 @@
 const { decomposeVue, partKindAtOffset } = require('../../sfc-parts')
 
-const TAG = '迁移脚本注释: AI-TODO'
+/** Marker written into source for AI follow-up (legacy Chinese prefix still recognized). */
+const TAG = 'AI-TODO'
+const LEGACY_TAG = '迁移脚本注释: AI-TODO'
 
 function commentFor(risk, style) {
   const cat = risk.category || 'risk'
   const msg = String(risk.message || risk.id || '')
     .replace(/\*\//g, '* /')
     .replace(/-->/g, '-- >')
-  const body = `${TAG} [${cat}] ${msg}`
+  const body = `${TAG}: [${cat}] ${msg}`
   if (style === 'html') return `<!-- ${body} -->`
   return `/* ${body} */`
 }
 
+function lineHasTodoMarker(line) {
+  if (!line) return false
+  return line.indexOf(TAG) !== -1 || line.indexOf(LEGACY_TAG) !== -1
+}
+
 function alreadyAnnotated(line, risk) {
-  if (!line || line.indexOf(TAG) === -1) return false
+  if (!lineHasTodoMarker(line)) return false
   if (risk.category && line.indexOf('[' + risk.category + ']') !== -1) return true
-  return line.indexOf(TAG) !== -1
+  return lineHasTodoMarker(line)
 }
 
 /**
- * 计算 .vue 中某段内容相对全文件的行偏移（0-based：块第 1 行 → 文件行 = offset）
+ * Line offset of a content slice inside a .vue file
+ * (0-based: first line of the block → file line = offset).
  */
 function scriptLineOffset(fileContent, scriptContent) {
   if (!scriptContent) return 0
@@ -61,9 +69,9 @@ const TEMPLATE_CATEGORIES = new Set([
 ])
 
 /**
- * 在内容中插入 AI-TODO：
- * - Vue template（html）→ <!-- -->
- * - Vue script / 普通 js → /* *\/
+ * Insert AI-TODO comments into content:
+ * - Vue template (html) → <!-- -->
+ * - Vue script / plain js → /* *\/
  * @param {string} content
  * @param {object[]} risks
  * @param {{ kind?: string, scriptContents?: string[], absPath?: string }} meta
@@ -80,7 +88,7 @@ function annotateContent(content, risks, meta) {
     .map((sc) => scriptLineOffset(content, sc))
     .filter((n) => n >= 0)
 
-  // 真代码 script 的行偏移（用于 babel loc）
+  // Line offsets of real script blocks (for babel loc)
   if (decomposed && decomposed.jsParts) {
     decomposed.jsParts.forEach((p) => {
       if (p.range && p.range.startLine) {
@@ -95,7 +103,7 @@ function annotateContent(content, risks, meta) {
     const inTemplateCat = TEMPLATE_CATEGORIES.has(risk.category)
 
     if (risk.loc && risk.loc.line) {
-      // babel loc 相对 script：加第一个真代码 script 偏移
+      // babel loc is relative to script: add first real-script offset
       const offset = isVue && scriptOffsets.length ? scriptOffsets[0] : 0
       lineIdx = offset + risk.loc.line - 1
     }
@@ -105,7 +113,7 @@ function annotateContent(content, risks, meta) {
     if (lineIdx < 0) {
       lineIdx = 0
       if (isVue) {
-        // 模板类风险插到 template；脚本类插到第一个真代码 script
+        // Template risks → template; script risks → first real script
         if (inTemplateCat && decomposed && decomposed.template && decomposed.template.range) {
           lineIdx = decomposed.template.range.startLine - 1
         } else if (decomposed && decomposed.jsParts && decomposed.jsParts[0] && decomposed.jsParts[0].range) {
@@ -117,7 +125,7 @@ function annotateContent(content, risks, meta) {
       }
     }
 
-    // 注释风格：按落点属于 html 还是 js 部分
+    // Comment style: html vs js based on insertion point
     let useStyle = 'js'
     if (isVue && decomposed) {
       if (inTemplateCat) useStyle = 'html'
@@ -154,6 +162,7 @@ function annotateContent(content, risks, meta) {
 
 module.exports = {
   TAG,
+  LEGACY_TAG,
   commentFor,
   annotateContent,
   scriptLineOffset,

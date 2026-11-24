@@ -23,14 +23,14 @@ function tryResolveFile(base, extensions) {
 }
 
 /**
- * 解析导入路径到绝对文件路径；解析失败返回 null，并标记 external
+ * Resolve an import specifier to an absolute file path; on failure return null and mark external
  */
 function resolveImport(specifier, fromFile, config) {
   if (!specifier || typeof specifier !== 'string') {
     return { resolved: null, external: true, kind: 'invalid' }
   }
 
-  // 裸模块 / http
+  // Bare module / http
   if (/^(https?:)?\/\//.test(specifier) || specifier.startsWith('data:')) {
     return { resolved: null, external: true, kind: 'url', specifier }
   }

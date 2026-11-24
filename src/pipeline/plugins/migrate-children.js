@@ -4,7 +4,7 @@ const { applySfcTransforms } = require('../../transform/apply-sfc')
 
 module.exports = createPlugin({
   name: 'migrate-children',
-  description: 'this.$children → __v23Children(this) 辅助函数',
+  description: 'this.$children → __v23Children(this) helper',
   version: '0.1.0',
   defaults: { enabled: true },
   match(ctx, api) {
@@ -22,7 +22,7 @@ module.exports = createPlugin({
         ctx.report({
           level: 'info',
           plugin: 'migrate-children',
-          message: 'children 改写 ×' + result.changes.length,
+          message: 'children rewrites ×' + result.changes.length,
         })
       }
       return
@@ -33,7 +33,7 @@ module.exports = createPlugin({
       ctx.report({
         level: 'info',
         plugin: 'migrate-children',
-        message: 'children 改写 ×' + result.changes.length,
+        message: 'children rewrites ×' + result.changes.length,
       })
     }
   },

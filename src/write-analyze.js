@@ -19,8 +19,8 @@ function slimForJson(graph) {
 }
 
 /**
- * 分析并写入项目内 .v23/graph.json（流水线要读的）
- * 可选：把 HTML 副本写到仓库 output/ 便于人工查看
+ * Analyze and write in-project .v23/graph.json (consumed by the pipeline)
+ * Optional: copy HTML report to repo output/ for human review
  */
 function writeAnalyze(projectRoot, options) {
   const opts = options || {}
@@ -50,12 +50,12 @@ function writeAnalyze(projectRoot, options) {
 
   let htmlPath = null
   if (opts.html !== false) {
-    // HTML 仅作查阅：默认也放进 .v23，全流程结束一并清掉
+    // HTML is for review only: also stored under .v23 by default; cleaned after full run
     htmlPath = path.join(workDir, 'index.html')
     fs.writeFileSync(htmlPath, renderHtmlReport(slim), 'utf8')
   }
 
-  // 可选额外拷贝到仓库 output（仍可 clean:output）
+  // Optional extra copy to repo output (still cleanable via clean:output)
   if (opts.copyReport) {
     const reportDir = outputPath(path.basename(root) + '-analyze')
     fs.mkdirSync(reportDir, { recursive: true })

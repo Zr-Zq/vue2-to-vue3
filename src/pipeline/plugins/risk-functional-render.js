@@ -3,7 +3,7 @@ const { pushRisk, loadScripts, hasOptionKey, locOf, traverse, t } = require('../
 
 module.exports = createPlugin({
   name: 'risk-functional-render',
-  description: '检出 options.functional 与 render(h)（template functional 由 html 分析负责）',
+  description: 'Detect options.functional and render(h) (template functional via html analysis)',
   version: '0.2.0',
   match(ctx) {
     return (
@@ -14,7 +14,7 @@ module.exports = createPlugin({
     )
   },
   async transform(ctx, api) {
-    // <template functional> 已在 risk-template-quirks / analyze-html 处理
+    // <template functional> is handled by risk-template-quirks / analyze-html
     loadScripts(ctx).forEach((script) => {
       if (hasOptionKey(script.ast, 'functional')) {
         pushRisk(api.project, {
@@ -23,8 +23,8 @@ module.exports = createPlugin({
           level: 'info',
           auto: 'yes',
           file: ctx.file.path,
-          message: 'options.functional = true（脚本改为普通组件）',
-          hint: '已由 migrate-functional 确定性处理',
+          message: 'options.functional = true (script → normal component)',
+          hint: 'Handled deterministically by migrate-functional',
         })
       }
 
@@ -37,9 +37,9 @@ module.exports = createPlugin({
               level: 'info',
               auto: 'yes',
               file: ctx.file.path,
-              message: '手写 render（脚本去 h 参 / 拍平 data / $slots）',
+              message: 'Hand-written render (script drops h / flattens data / $slots)',
               loc: locOf(p.node.key),
-              hint: '已由 migrate-render-h 确定性处理',
+              hint: 'Handled deterministically by migrate-render-h',
             })
           }
         },
@@ -54,9 +54,9 @@ module.exports = createPlugin({
               level: 'info',
               auto: 'yes',
               file: ctx.file.path,
-              message: '手写 render 函数（脚本可改）',
+              message: 'Hand-written render function (script can rewrite)',
               loc: locOf(p.node.key),
-              hint: '已由 migrate-render-h 确定性处理',
+              hint: 'Handled deterministically by migrate-render-h',
             })
           }
         },

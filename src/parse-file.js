@@ -27,8 +27,8 @@ function parseJs(code, filename) {
 }
 
 /**
- * Vue：拆成 html(template) + js(script)；script 仅当真代码才 babel。
- * 普通 .js/.ts：整文件走 js。
+ * Vue: split into html(template) + js(script); babel only for real script code.
+ * Plain .js/.ts: whole file goes through js.
  *
  * @returns {{
  *   kind: 'js'|'vue',
@@ -120,7 +120,7 @@ function parseProjectFile(absPath) {
 }
 
 /**
- * 从已有内容解析（不一定落盘），供 pipeline 用当前 content
+ * Parse from existing content (need not be on disk); for pipeline current content
  */
 function parseProjectSource(code, absPath) {
   const ext = path.extname(absPath || '').toLowerCase()

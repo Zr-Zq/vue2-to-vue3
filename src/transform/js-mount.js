@@ -1,5 +1,5 @@
 /**
- * 挂载相关确定性改写：
+ * Deterministic mount-related rewrites:
  * - new Vue({...}).$mount(el) → createApp({...}).use(...).mount(el)
  * - new Vue({...}).$mount() → createApp({...}).mount(document.createElement('div'))
  * - new Ctor({ propsData }) → createApp(Ctor, props)
@@ -115,7 +115,7 @@ function migrateMount(code) {
     }
   )
 
-  // new Vue(Ctor) → createApp(Ctor)（无立刻 mount）
+  // new Vue(Ctor) → createApp(Ctor) (no immediate mount)
   out = out.replace(/new\s+Vue\s*\(\s*([A-Za-z_$][\w$]*)\s*\)/g, (full, ctor) => {
     const to = 'createApp(' + ctor + ')'
     changes.push({ kind: 'new-vue-ctor', from: full, to })
@@ -149,10 +149,10 @@ function migrateMount(code) {
     return to
   })
 
-  // $destroy() → 近似：若有 __v23App 不处理；常见 vm.$destroy() 标为 unmount 需 app 句柄
-  // 确定性：this._x.$destroy() 在已改 mount 后往往失效，改为空操作注释保留调用删除
+  // $destroy() → approx: skip if __v23App present; typical vm.$destroy() needs app handle for unmount
+  // Deterministic: this._x.$destroy() often breaks after mount rewrite; comment no-op / drop call
   out = out.replace(/(\b[A-Za-z_$][\w$.]*)\s*\.\s*\$destroy\s*\(\s*\)/g, (full, id) => {
-    // Vue3 组件实例无 $destroy；若是 createApp 返回的 proxy，应保存 app 再 unmount
+    // Vue3 component instance has no $destroy; if createApp proxy, keep app and unmount
     const to = '(' + id + '.$el && ' + id + '.$el.remove && ' + id + '.$el.remove())'
     changes.push({ kind: 'destroy-approx', from: full, to })
     return to

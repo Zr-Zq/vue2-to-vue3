@@ -1,13 +1,13 @@
 /**
- * my-vue-app 迁移流水线配置
- * 顺序可调；enabled 热开关；use 可挂外部插件
+ * my-vue-app migration pipeline config
+ * Order is adjustable; enabled is a hot switch; use can load external plugins
  */
 module.exports = {
   dryRun: true,
   preflight: true,
   pipeline: [
     { name: 'scss' },
-    { name: 'less', enabled: false }, // 本项目基本不用 less，关掉
+    { name: 'less', enabled: false }, // Project rarely uses less; disabled
     { name: 'typescript' },
     { name: 'vuex' },
     { name: 'router' },

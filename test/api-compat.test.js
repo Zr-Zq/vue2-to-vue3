@@ -1,5 +1,5 @@
 /**
- * api-compat / directive-hooks / filters / deep 单测
+ * Unit tests for api-compat / directive-hooks / filters / deep
  *   node test/api-compat.test.js
  */
 const assert = require('assert')
@@ -79,12 +79,25 @@ console.log('== filters option → methods ==')
 
 console.log('== css deep ==')
 {
-  const r = migrateCssDeep('.a >>> .b { }\n.c /deep/ .d { }\n.e ::v-deep .f { }\n.g ::v-deep(.h) { }\n.i :deep(.j) { }')
-  ok(/::v-deep \.b/.test(r.code), '>>> → ::v-deep')
-  ok(/::v-deep \.d/.test(r.code), '/deep/ → ::v-deep')
-  ok(/::v-deep \.f/.test(r.code), '::v-deep space kept')
-  ok(/::v-deep\(\.h\)/.test(r.code), '::v-deep()')
-  ok(/::v-deep\(\.j\)/.test(r.code), ':deep() → ::v-deep()')
+  const r = migrateCssDeep(
+    [
+      '.a >>> .b { }',
+      '.c /deep/ .d { }',
+      '.e ::v-deep .f { }',
+      '.e2 ::v-deep.f2 { }',
+      '.g ::v-deep(.h) { }',
+      '.g2 ::deep(.h2) { }',
+      '.i :deep(.j) { }',
+    ].join('\n')
+  )
+  ok(/\.a :deep\(\.b\)/.test(r.code), '>>> → :deep()')
+  ok(/\.c :deep\(\.d\)/.test(r.code), '/deep/ → :deep()')
+  ok(/\.e :deep\(\.f\)/.test(r.code), '::v-deep space → :deep()')
+  ok(/\.e2 :deep\(\.f2\)/.test(r.code), '::v-deep.sel → :deep()')
+  ok(/\.g :deep\(\.h\)/.test(r.code), '::v-deep() → :deep()')
+  ok(/\.g2 :deep\(\.h2\)/.test(r.code), '::deep() → :deep()')
+  ok(/\.i :deep\(\.j\)/.test(r.code), ':deep() kept')
+  ok(!/::v-deep|\/deep\/|>>>|::deep\(/.test(r.code), 'no legacy deep left')
 }
 
 console.log('== html template integrates filters ==')

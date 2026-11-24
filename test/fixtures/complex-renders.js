@@ -1,5 +1,5 @@
 /**
- * 复杂 render(h) 样本（供压力测 / 单测复用）
+ * Complex render(h) samples (shared by stress / unit tests)
  */
 module.exports = [
   {
@@ -108,7 +108,7 @@ export default {
 }
 `,
     assert(code) {
-      // h 参数去掉；h.bind 里的 h 是标识符调用，应仍存在
+      // h param removed; h in h.bind is an identifier call and should remain
       return /render:\s*function\s*\(\s*\)\s*\{/.test(code) && /\bh\b/.test(code)
     },
   },
@@ -154,7 +154,7 @@ export default {
   },
   {
     id: 'createElement-alias-not-touched',
-    // 参数名不是 h 时不应误伤；但若有 $scopedSlots 仍改
+    // Do not touch when param is not h; still rewrite $scopedSlots if present
     src: `
 export default {
   render(createElement) {

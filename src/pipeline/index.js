@@ -12,14 +12,14 @@ const { createPlugin } = require('./create-plugin')
 const { writeAnalyze, loadProjectGraph } = require('../write-analyze')
 
 /**
- * 创建带内置插件的注册表
+ * Create a registry with built-in plugins registered.
  */
 function createDefaultRegistry() {
   return registerBuiltins(createRegistry())
 }
 
 /**
- * 主入口：加载配置 → 读/写项目内 .v23 分析 → 按顺序跑流水线
+ * Main entry: load config → read/write project .v23 analysis → run pipeline in order.
  */
 async function run(projectRoot, options) {
   const opts = options || {}
@@ -36,7 +36,7 @@ async function run(projectRoot, options) {
     graph = loadProjectGraph(projectRoot)
   }
   if (config.preflight && !graph) {
-    // 没有现成分析时写入项目 .v23，供后续插件 lookup
+    // No existing analysis: write project .v23 for later plugin lookup
     const written = writeAnalyze(projectRoot, { html: false })
     graph = written.graph
   }

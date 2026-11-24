@@ -1,5 +1,5 @@
 /**
- * render 迁移压力测：复杂样本 + 真实工程 + 多轮幂等 + 合成海量
+ * render migration stress: complex samples + real project + multi-round idempotence + synth volume
  *
  *   node test/render-h.stress.js
  *   node test/render-h.stress.js --rounds 20 --synth 200
@@ -41,7 +41,7 @@ function stripCommentsAndStrings(code) {
 
 function assertNoRenderH(code) {
   const c = stripCommentsAndStrings(code)
-  // 只认「函数形态」的 render(h)，避免模板文案 / desc 字符串误伤
+  // Only function-form render(h); avoid false hits in template prose / desc strings
   return (
     !/\brender\s*\(\s*h\s*\)\s*\{/.test(c) &&
     !/\brender\s*:\s*\(\s*h\s*\)\s*=>/.test(c) &&
@@ -52,7 +52,7 @@ function assertNoRenderH(code) {
 function synthCase(i) {
   const depth = 2 + (i % 4)
   function tree(d, n) {
-    // n 必须是合法标识后缀，避免 0a 这类数字后直接跟字母
+    // n must be a valid identifier suffix (avoid digit-then-letter like 0a)
     const id = 'n' + n
     if (d <= 0) {
       return (
@@ -130,12 +130,12 @@ function idempotentRounds(src, filename, isSfc, rounds) {
     perRound.push(n)
     totalChanges += n
     cur = r.content
-    // 第 2 轮起变化应迅速降为 0（允许注释清理等极少余量）
+    // From round 2, changes should drop to ~0 (tiny remainder like comment cleanup ok)
     if (i >= 1) {
       assert.ok(n <= 1, filename + ' round ' + (i + 1) + ' still changing ×' + n)
     }
   }
-  // 最终稳定：再跑一轮必须 0
+  // Final stability: one more round must be 0
   const last = migrateAny(cur, filename, isSfc)
   assert.strictEqual((last.changes || []).length, 0, filename + ' not stable at end')
   return { perRound, totalChanges, final: cur }
@@ -148,7 +148,7 @@ function main() {
   let failed = 0
   const failures = []
 
-  console.log('=== A. 复杂样本 (' + complex.length + ') ===')
+  console.log('=== A. complex samples (' + complex.length + ') ===')
   complex.forEach((c) => {
     try {
       runCase(c, c.id)
@@ -162,7 +162,7 @@ function main() {
     }
   })
 
-  console.log('\n=== B. 真实工程含 render 的文件 ===')
+  console.log('\n=== B. real project files with render ===')
   const appRoot = path.resolve(__dirname, '../../1.pure-vue-app')
   const files = fg.sync(['src/**/*.{js,vue}'], {
     cwd: appRoot,
@@ -173,14 +173,14 @@ function main() {
     const txt = fs.readFileSync(f, 'utf8')
     return /\brender\s*\(\s*h\s*\)|\brender\s*:\s*\(\s*h\s*\)|\$scopedSlots/.test(txt)
   })
-  console.log('  命中', renderFiles.length, '个文件')
+  console.log('  hits', renderFiles.length, 'files')
   renderFiles.forEach((abs) => {
     const rel = path.relative(appRoot, abs).split(path.sep).join('/')
     try {
       const raw = fs.readFileSync(abs, 'utf8')
       const r1 = migrateAny(raw, abs, /\.vue$/i.test(abs))
       assert.ok(!r1.error, rel + ' ' + r1.error)
-      // 忽略注释/字符串里的「render(h)」文案（如 desc 字段）
+      // Ignore "render(h)" text inside comments/strings (e.g. desc fields)
       assert.ok(assertNoRenderH(r1.content), rel + ' still render(h) in code')
       const codeOnly = stripCommentsAndStrings(r1.content)
       assert.ok(!/this\.\$scopedSlots\b/.test(codeOnly), rel + ' still $scopedSlots')
@@ -194,7 +194,7 @@ function main() {
     }
   })
 
-  console.log('\n=== C. 合成样本 ×' + args.synth + ' ===')
+  console.log('\n=== C. synthetic samples ×' + args.synth + ' ===')
   const tSynth0 = Date.now()
   for (let i = 0; i < args.synth; i += 1) {
     const c = synthCase(i)
@@ -214,9 +214,9 @@ function main() {
     }
   }
   const synthMs = Date.now() - tSynth0
-  console.log('  合成耗时', synthMs + 'ms', 'avg', (synthMs / Math.max(1, args.synth)).toFixed(2) + 'ms/case')
+  console.log('  synth time', synthMs + 'ms', 'avg', (synthMs / Math.max(1, args.synth)).toFixed(2) + 'ms/case')
 
-  console.log('\n=== D. 多轮全量复跑 ×' + args.rounds + ' ===')
+  console.log('\n=== D. full re-runs ×' + args.rounds + ' ===')
   const batch = complex.concat(renderFiles.slice(0, 8).map((abs) => ({
     id: path.basename(abs),
     src: fs.readFileSync(abs, 'utf8'),
@@ -228,7 +228,7 @@ function main() {
     const rt0 = Date.now()
     batch.forEach((c) => {
       const out = runCase(c, 'R' + r + ':' + c.id)
-      // 对输出再迁一轮应稳定
+      // Re-migrating the output should be stable
       const again = migrateAny(out.content, c.id, c.sfc)
       assert.ok((again.changes || []).length <= 1, 'R' + r + ' ' + c.id + ' not stable')
     })
@@ -239,7 +239,7 @@ function main() {
   }
 
   const totalMs = Date.now() - t0
-  console.log('\n=== 汇总 ===')
+  console.log('\n=== summary ===')
   console.log('passed=', passed, 'failed=', failed, 'totalMs=', totalMs)
   console.log(
     'round ms: min/avg/max',

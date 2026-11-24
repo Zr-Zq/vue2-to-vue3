@@ -3,7 +3,7 @@ const { loadHtmlAnalysis, pushRisk } = require('../risk/helpers')
 
 module.exports = createPlugin({
   name: 'risk-keepalive-combo',
-  description: '基于 HTML 分析：keep-alive 与 :is / 异步组件组合',
+  description: 'From HTML analysis: keep-alive with :is / async components',
   version: '0.2.0',
   match(ctx) {
     return ctx.file.kind === 'vue' || ctx.file.ext === '.vue'
@@ -16,7 +16,7 @@ module.exports = createPlugin({
     const hasKeep = ids.has('html.keep-alive')
     const hasIs = ids.has('html.component-is') || ids.has('html.is-attr')
 
-    // 异步线索仍在 script（整文件）侧看
+    // Async clues are still inspected on the script (whole-file) side
     const src = ctx.file.content || ''
     const hasAsyncHint =
       /\(\)\s*=>\s*import\s*\(/.test(src) ||
@@ -25,7 +25,7 @@ module.exports = createPlugin({
 
     const keepLoc = ((analysis.findings || []).find((f) => f.id === 'html.keep-alive') || {}).loc
 
-    // keep-alive + :is：脚本会补 :key，视为可自动、非危险
+    // keep-alive + :is: scripts add :key → treated as auto, not a risk
     if (hasKeep && hasIs) {
       pushRisk(api.project, {
         id: 'keepalive.is',
@@ -33,13 +33,13 @@ module.exports = createPlugin({
         level: 'info',
         auto: 'yes',
         file: ctx.file.path,
-        message: 'keep-alive 与动态 :is（脚本补 :key）',
-        hint: '已由 migrate-html 确定性处理',
+        message: 'keep-alive with dynamic :is (script adds :key)',
+        hint: 'Handled deterministically by migrate-html',
         loc: keepLoc || null,
         part: 'html',
       })
     }
-    // 仅异步线索仍提示回归，但不标 block
+    // Async-only clues still suggest regression, but do not mark block
     if (hasKeep && hasAsyncHint) {
       pushRisk(api.project, {
         id: 'keepalive.async',
@@ -47,8 +47,8 @@ module.exports = createPlugin({
         level: 'info',
         auto: 'yes',
         file: ctx.file.path,
-        message: 'keep-alive 与异步组件线索同文件（脚本可处理结构）',
-        hint: '结构已脚本化；运行时缓存行为建议回归',
+        message: 'keep-alive and async-component clues in same file (script can fix structure)',
+        hint: 'Structure scripted; regress runtime cache behavior',
         loc: keepLoc || null,
         part: 'html',
       })

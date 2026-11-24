@@ -2,12 +2,12 @@ const { createPlugin } = require('../create-plugin')
 const { loadHtmlAnalysis, pushHtmlFindings } = require('../risk/helpers')
 
 /**
- * HTML（template）风险：统一走 analyze-html，不再手写散落正则。
- * 覆盖：v-for+v-if、filters、.native、.sync、动态参数、旧 slot、functional 等。
+ * HTML (template) risks: unify via analyze-html; no scattered hand-written regex.
+ * Covers: v-for+v-if, filters, .native, .sync, dynamic args, legacy slot, functional, etc.
  */
 module.exports = createPlugin({
   name: 'risk-template-quirks',
-  description: 'HTML/template 迁移风险（统一 html 分析）',
+  description: 'HTML/template migration risks (unified html analysis)',
   version: '0.2.0',
   match(ctx) {
     return ctx.file.kind === 'vue' || ctx.file.ext === '.vue'
@@ -16,7 +16,7 @@ module.exports = createPlugin({
     const analysis = loadHtmlAnalysis(ctx)
     if (!analysis || analysis.missing) return
 
-    // keepalive 相关由 risk-keepalive-combo 做组合判断；这里跳过纯 info 的 keep-alive / :is 单点
+    // keep-alive combos handled by risk-keepalive-combo; skip info-only keep-alive / :is singles here
     const filtered = Object.assign({}, analysis, {
       findings: (analysis.findings || []).filter((f) => {
         if (f.id === 'html.keep-alive') return false
@@ -35,7 +35,7 @@ module.exports = createPlugin({
       })
     }
 
-    // 摘要挂到 meta，供后续插件/报告
+    // Attach summary on meta for later plugins / reports
     if (!api.project.shared.htmlSummaries) api.project.shared.htmlSummaries = Object.create(null)
     api.project.shared.htmlSummaries[ctx.file.path] = analysis.summary
   },

@@ -1,20 +1,20 @@
 /**
- * 规范化插件定义，保证热插拔接口一致。
+ * Normalize a plugin definition so hot-plug interfaces stay consistent.
  *
  * @typedef {object} PipelinePlugin
  * @property {string} name
  * @property {string} [description]
  * @property {string} [version]
  * @property {(projectCtx, api) => void|Promise<void>} [setup]
- * @property {(fileCtx) => boolean} [match]  默认 true
+ * @property {(fileCtx) => boolean} [match]  defaults to true
  * @property {(fileCtx, api) => void|Promise<void>} [transform]
  * @property {(projectCtx, api) => void|Promise<void>} [teardown]
- * @property {object} [defaults] 默认 options
+ * @property {object} [defaults] default options
  */
 
 function createPlugin(def) {
   if (!def || !def.name) {
-    throw new Error('plugin 必须有 name')
+    throw new Error('plugin must have name')
   }
   return {
     name: def.name,

@@ -1,5 +1,5 @@
 /**
- * Vue.extend / $mount 改写单测
+ * Unit tests for Vue.extend / $mount rewrites
  *   node test/extend-mount.test.js
  */
 const assert = require('assert')
@@ -37,7 +37,7 @@ console.log('== new Vue().$mount → createApp().mount ==')
   ok(!/\$mount/.test(r.code), 'no $mount')
 }
 
-console.log('== 无参 $mount ==')
+console.log('== no-arg $mount ==')
 {
   const src = 'new Vue({ data: () => ({}) }).$mount()\n'
   const r = migrateMount(src)

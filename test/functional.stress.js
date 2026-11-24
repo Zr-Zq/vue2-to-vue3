@@ -1,5 +1,5 @@
 /**
- * functional 迁移多轮压测
+ * Multi-round stress for functional migration
  *   node test/functional.stress.js
  *   node test/functional.stress.js --rounds 20 --synth 200
  */
@@ -26,7 +26,7 @@ function parseArgs(argv) {
 
 function migrateVue(src, filename) {
   let content = String(src || '').replace(
-    /^[ \t]*\/\*\s*迁移脚本注释:[\s\S]*?\*\/[ \t]*\r?\n/gm,
+    /^[ \t]*\/\*\s*(?:迁移脚本注释:\s*)?AI-TODO:?[\s\S]*?\*\/[ \t]*\r?\n/gm,
     (m) => (/\[functional\]/.test(m) ? '' : m)
   )
   const strip = stripTemplateFunctionalAttr(content)
@@ -52,7 +52,7 @@ function migrateVue(src, filename) {
     }
   )
   content = out.content
-  // 兜底：SFC 解析坏了时仍改 template/script 块
+  // Fallback: still rewrite template/script blocks if SFC parse fails
   if (
     /v-on\s*=\s*["']listeners["']/.test(content) ||
     /\bfunctional\s*:\s*true\b/.test(content) ||
@@ -76,7 +76,7 @@ function assertClean(code, label) {
   assert.ok(!/\bfunctional\s*:\s*true\b/.test(code), label + ': functional:true')
   assert.ok(!/\bv-on\s*=\s*["']listeners["']/.test(code), label + ': v-on listeners')
   assert.ok(!/\bv-bind\s*=\s*["']data\.attrs["']/.test(code), label + ': data.attrs')
-  // 未加 $ 的 props. 在模板里（粗检，排除 $props）
+  // Bare props. in template (coarse check; exclude $props)
   const tpl = (code.match(/<template\b[^>]*>([\s\S]*?)<\/template>/i) || [])[1] || ''
   assert.ok(!/(^|[^$])\bprops\./.test(tpl), label + ': bare props. in template')
 }

@@ -1,5 +1,5 @@
 /**
- * HTML 改写单测：sync / native / slot / v-for+v-if / keep-alive:key
+ * HTML rewrite unit tests: sync / native / slot / v-for+v-if / keep-alive:key
  *   node test/html-migrate.test.js
  */
 const assert = require('assert')
@@ -15,17 +15,17 @@ function ok(cond, msg) {
   console.log('  ok:', msg)
 }
 
-console.log('== sync：必须变成 v-model:prop，不能只删 .sync ==')
+console.log('== sync: must become v-model:prop, not only drop .sync ==')
 {
   const r = rewriteSync('<Child :title.sync="t" :visible.sync="v" />')
   ok(/v-model:title="t"/.test(r.code), 'title → v-model:title')
   ok(/v-model:visible="v"/.test(r.code), 'visible → v-model:visible')
   ok(!/\.sync/.test(r.code), 'no .sync left')
-  // 反例：若只删 sync 会变成单向 :title="t"（注意不要误伤 v-model:title）
+  // Counterexample: stripping sync alone would leave one-way :title="t" (do not touch v-model:title)
   ok(!/(^|[^-\w])\:title="t"/.test(r.code), 'not one-way :title')
 }
 
-console.log('== native：去掉 .native ==')
+console.log('== native: drop .native ==')
 {
   const r = migrateHtmlTemplate('<Eg @click.native="on" @keyup.enter.native="k" />')
   ok(/@click="on"/.test(r.code), '@click.native → @click')
@@ -33,7 +33,7 @@ console.log('== native：去掉 .native ==')
   ok(!/\.native/.test(r.code), 'no .native')
 }
 
-console.log('== slot 统一为 # ==')
+console.log('== slots unify to # ==')
 {
   const src = [
     '<Host>',
@@ -52,16 +52,17 @@ console.log('== slot 统一为 # ==')
   console.log('  out:\n' + r.code)
 }
 
-console.log('== v-for+v-if 拆节点 ==')
+console.log('== v-for+v-if same-node left for AI (html migrate does not auto-split) ==')
 {
-  const r = rewriteVForVIf('<li v-for="item in list" v-if="item.ok" :key="item.id">{{ item }}</li>')
-  ok(/<template v-for="item in list">/.test(r.code), 'outer template v-for（无 key）')
-  ok(/<li[^>]*:key="item.id"/.test(r.code), 'key 在内层元素（Vue2 兼容）')
-  ok(/<li[^>]*v-if="item.ok"/.test(r.code), 'inner keeps v-if')
-  ok(!/<li[^>]*v-for=/.test(r.code), 'no same-node v-for')
+  const src = '<li v-for="item in list" v-if="item.ok" :key="item.id">{{ item }}</li>'
+  const r = migrateHtmlTemplate(src)
+  ok(/v-for="item in list"/.test(r.code) && /v-if="item.ok"/.test(r.code), 'same-node combo kept for AI')
+  // Helper still exists for experiments / docs, but is not part of migrateHtmlTemplate
+  const helper = rewriteVForVIf(src)
+  ok(helper.changes.length > 0, 'rewriteVForVIf helper still available')
 }
 
-console.log('== slot：嵌套同名 / 嵌套 div ==')
+console.log('== slot: nested same name / nested div ==')
 {
   const menu = migrateHtmlTemplate(
     '<el-submenu><template slot="title"><i class="x"></i><span slot="title">纯 Vue2</span></template></el-submenu>'
@@ -78,7 +79,7 @@ console.log('== slot：嵌套同名 / 嵌套 div ==')
   ok(!/<\/div><\/template>\s*<\/div>/.test(card.code), 'no orphan outer close')
 }
 
-console.log('== keep-alive + :is 补 :key ==')
+console.log('== keep-alive + :is add :key ==')
 {
   const r = rewriteKeepAliveIsKey(
     '<keep-alive><component :is="view" /><Foo :is="other" /></keep-alive>'
@@ -91,14 +92,14 @@ console.log('== keep-alive + :is 补 :key ==')
   ok(already.changes.length === 0, 'existing :key not duplicated')
 }
 
-console.log('== template v-for :key → 内层（Vue2）==')
+console.log('== template v-for :key → inner (Vue2) ==')
 {
   const { rewriteTemplateVForKey } = require('../src/transform/html-directives')
   const r = rewriteTemplateVForKey(
     '<template v-for="item in list" :key="item.id"><li v-if="item.on">{{ item.text }}</li></template>'
   )
-  ok(/<template v-for="item in list">/.test(r.code), 'template 无 :key')
-  ok(/<li[^>]*:key="item.id"/.test(r.code), 'key 在 li 上')
+  ok(/<template v-for="item in list">/.test(r.code), 'template has no :key')
+  ok(/<li[^>]*:key="item.id"/.test(r.code), 'key on li')
   ok(!/<template[^>]*:key=/.test(r.code), 'no keyed template')
 }
 

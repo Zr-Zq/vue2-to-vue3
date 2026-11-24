@@ -2,18 +2,18 @@ const { createPlugin } = require('../create-plugin')
 const { pushRisk } = require('../risk/helpers')
 
 /**
- * 依赖前置 graph.mixins：宿主与 mixin 成员同名冲突
- * 在 setup 阶段按图扫一次即可，match 只让入口文件跑避免重复——改用 setup 全局扫
+ * Depends on preflight graph.mixins: host vs mixin same-name member collisions.
+ * Scan the graph once in setup; match only entry files would duplicate — use setup global scan.
  */
 module.exports = createPlugin({
   name: 'risk-mixin-collision',
-  description: 'mixin 与宿主同名成员冲突（依赖 graph）',
+  description: 'Mixin vs host same-name member collision (needs graph)',
   version: '0.1.0',
   async setup(project) {
     const mixins = project.graph && project.graph.mixins
     if (!mixins || !mixins.memberIndex) return
 
-    // 按应用文件聚合：该文件本地 mixin 注入的成员
+    // Aggregate by apply-file: members injected by local mixins in that file
     const byHost = Object.create(null)
     mixins.applications.forEach((app) => {
       if (!app.file) return
@@ -21,7 +21,7 @@ module.exports = createPlugin({
       byHost[app.file].push(app)
     })
 
-    // 成员 → 多个 mixin 来源 或 与「同文件 options」冲突：先标「同成员被多个 mixin 提供」
+    // Member → multiple mixin sources or clash with same-file options: flag multi-mixin first
     const nameHosts = Object.create(null)
     mixins.memberIndex.forEach((m) => {
       ;(m.appliedBy || []).forEach((a) => {
@@ -42,13 +42,13 @@ module.exports = createPlugin({
         level: 'warn',
         auto: 'partial',
         file,
-        message: '成员 "' + name + '" 来自多个 mixin 应用路径',
+        message: 'member "' + name + '" comes from multiple mixin application paths',
         evidence: list.map((x) => x.mixinFile).join(' | '),
-        hint: '合并优先级依赖 Vue2 mixin 策略，迁移需显式处理',
+        hint: 'Merge priority follows Vue2 mixin strategy; migrate explicitly',
       })
     })
 
-    // 全局 mixin 成员：全部标 block 提示
+    // Global mixin members: mark all as block hints
     mixins.memberIndex.forEach((m) => {
       if (!m.global) return
       pushRisk(project, {
@@ -57,13 +57,13 @@ module.exports = createPlugin({
         level: 'block',
         auto: 'no',
         file: m.mixinFile,
-        message: '全局 mixin 注入成员 "' + m.name + '" (' + m.section + ')',
+        message: 'Global mixin injects member "' + m.name + '" (' + m.section + ')',
         evidence: m.mixinFile,
-        hint: '影响面大，应人工确认替代方案',
+        hint: 'Wide blast radius; confirm replacement manually',
       })
     })
   },
   match() {
-    return false // 仅 setup 扫图
+    return false // setup-only graph scan
   },
 })

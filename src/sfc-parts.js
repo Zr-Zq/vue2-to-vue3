@@ -1,14 +1,14 @@
 /**
- * 把 .vue SFC 拆成可分别处理的部分：
+ * Split a .vue SFC into separately handled parts:
  * - template → html
- * - script / scriptSetup → js（仅「真代码」才进入 JS 处理）
- * - style → style（本模块只暴露，默认不走 js/html）
+ * - script / scriptSetup → js (only "real code" enters JS processing)
+ * - style → style (exposed here; not processed as js/html by default)
  */
 const compilerSfc = require('@vue/compiler-sfc')
 
 const JS_LANGS = new Set(['', 'js', 'jsx', 'ts', 'tsx', 'javascript', 'typescript'])
 
-/** 明确不是可执行 JS 的 script type */
+/** Script types that are clearly not executable JS */
 const NON_JS_SCRIPT_TYPE = /^(text\/(x-)?template|text\/html|application\/json|text\/json|text\/css|text\/plain)(\s|;|$)/i
 
 /**
@@ -27,7 +27,7 @@ function parseVueDescriptor(content, filename) {
 
 function attrOf(block, name) {
   if (!block) return null
-  // SFCDescriptor 上 type/content 是块元数据，不是 HTML 属性；HTML attrs 只看 attrs
+  // On SFCDescriptor, type/content are block metadata, not HTML attrs; HTML attrs only from attrs
   const attrs = block.attrs || block.attrsMap || null
   if (attrs) {
     if (attrs[name] != null) return attrs[name]
@@ -35,14 +35,14 @@ function attrOf(block, name) {
     const key = Object.keys(attrs).find((k) => String(k).toLowerCase() === lower)
     if (key != null) return attrs[key]
   }
-  // lang / src 在 descriptor 上常有顶层字段
+  // lang / src often exist as top-level fields on descriptor
   if (name === 'lang' && block.lang != null) return block.lang
   if (name === 'src' && block.src != null) return block.src
   return null
 }
 
 /**
- * 去掉注释与空白后，是否还像可执行 JS（避免空块、纯注释、src 外链空壳）
+ * After stripping comments/whitespace, still look like executable JS (skip empty/comment-only/src stubs)
  */
 function stripJsNoise(code) {
   return String(code || '')
@@ -52,7 +52,7 @@ function stripJsNoise(code) {
 }
 
 /**
- * 判断 SFC 的 script 块是否应走 JS 处理
+ * Decide whether an SFC script block should go through JS processing
  * @returns {{ ok: boolean, reason: string|null }}
  */
 function isRealJsScript(block) {
@@ -71,7 +71,7 @@ function isRealJsScript(block) {
     if (NON_JS_SCRIPT_TYPE.test(type)) {
       return { ok: false, reason: 'type:' + typeRaw }
     }
-    // module / text/javascript / typescript 等放行；其它未知 type 不当真 JS
+    // Allow module / text/javascript / typescript etc.; other unknown types are not real JS
     const okType =
       type === 'module' ||
       /^(text|application)\/(java|ecma)script/.test(type) ||
@@ -91,7 +91,7 @@ function isRealJsScript(block) {
   if (!noiseFree) {
     return { ok: false, reason: 'not-code' }
   }
-  // 至少要有标识符类字符，排除纯标点
+  // Need identifier-like chars; exclude punctuation-only
   if (!/[A-Za-z_$]/.test(noiseFree)) {
     return { ok: false, reason: 'not-code' }
   }
@@ -115,7 +115,7 @@ function blockRangeInFile(fileContent, blockContent) {
 }
 
 /**
- * 优先用 SFC 块的 start/end（源码真实切片）；compiler 的 content 可能被去缩进，不能直接字符串替换回文件。
+ * Prefer SFC block start/end (true source slice); compiler content may be de-indented and must not be string-replaced back.
  */
 function blockSpanFromDescriptor(raw, block) {
   if (!block) return null
@@ -138,7 +138,7 @@ function blockSpanFromDescriptor(raw, block) {
 }
 
 /**
- * 拆解 Vue 文件为 html / js 等部分
+ * Decompose a Vue file into html / js parts
  * @returns {{
  *   kind: 'vue',
  *   descriptor: object,
@@ -183,7 +183,7 @@ function decomposeVue(content, absPath) {
       ? {
           id: 'template',
           kind: 'html',
-          // 写回用 rawCode；分析也优先 raw，避免缩进归一化导致替换失败
+          // Write-back uses rawCode; analysis prefers raw too to avoid indent-normalization replace failures
           code: templateSpan ? templateSpan.rawCode : String(descriptor.template.content || ''),
           normalizedCode: descriptor.template.content == null ? null : String(descriptor.template.content),
           lang: String(descriptor.template.lang || 'html').toLowerCase(),
@@ -256,7 +256,7 @@ function decomposeVue(content, absPath) {
 }
 
 /**
- * 按字符偏移判断落在 html(template) 还是 js(script)
+ * Decide by char offset whether inside html(template) or js(script)
  * @returns {'html'|'js'|'other'}
  */
 function partKindAtOffset(decomposed, offset) {

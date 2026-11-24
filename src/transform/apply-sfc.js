@@ -1,6 +1,6 @@
 /**
- * 把对 template / script 的改写合并回整份 .vue
- * 必须用 SFC 块 start/end 切片写回（compiler content 可能去缩进，不能 indexOf 替换）
+ * Merge template / script rewrites back into the full .vue
+ * Must slice-write via SFC block start/end (compiler content may be de-indented; do not indexOf-replace)
  */
 const { decomposeVue } = require('../sfc-parts')
 
@@ -45,7 +45,7 @@ function applySfcTransforms(vueSource, absPath, templateFn, scriptFn, styleFn) {
           part: 'html',
         })
       } else {
-        // 兜底：字符串替换（可能失败）
+        // Fallback: string replace (may fail)
         edits.push({ needle: srcCode, text: result.code, part: 'html' })
       }
       changes.push(...(result.changes || []).map((c) => Object.assign({ part: 'html' }, c)))
@@ -108,7 +108,7 @@ function applySfcTransforms(vueSource, absPath, templateFn, scriptFn, styleFn) {
     })
   }
 
-  // 从后往前应用，避免偏移错乱
+  // Apply from back to front to avoid offset drift
   edits.sort((a, b) => {
     const as = a.start != null ? a.start : 0
     const bs = b.start != null ? b.start : 0

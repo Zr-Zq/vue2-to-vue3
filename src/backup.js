@@ -1,6 +1,6 @@
 /**
- * 覆盖写之前备份已存在文件
- * 备份根：<base>/.v23/backup/<timestamp>/
+ * Back up existing files before overwrite
+ * Backup root: <base>/.v23/backup/<timestamp>/
  */
 const fs = require('fs')
 const path = require('path')
@@ -22,8 +22,8 @@ function backupStamp() {
 }
 
 /**
- * @param {string} baseRoot 迁移目标根
- * @param {string} [stamp] 同一批次共用时间戳
+ * @param {string} baseRoot Migration target root
+ * @param {string} [stamp] Shared timestamp for one batch
  * @returns {{ stamp: string, dir: string }}
  */
 function ensureBackupBatch(baseRoot, stamp) {
@@ -35,7 +35,7 @@ function ensureBackupBatch(baseRoot, stamp) {
 }
 
 /**
- * 若 destAbs 已存在：复制到 backupDir 下相对 baseRoot 的镜像路径
+ * If destAbs already exists: copy to mirrored path under backupDir relative to baseRoot
  * @returns {{ backedUp: boolean, backupPath: string|null }}
  */
 function backupIfExists(baseRoot, destAbs, backupDir) {

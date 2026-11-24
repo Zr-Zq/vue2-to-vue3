@@ -11,7 +11,7 @@ const { analyzeMixinApplications, buildMixinIndex } = require('./analyze-mixins'
 const { analyzeVueHtml } = require('./analyze-html')
 
 /**
- * 数据结构（图 + 每文件作用域树 + 全局登记）：
+ * Data shape (graph + per-file scope tree + global registrations):
  * {
  *   meta, files[], edges[], dynamics[], globals[], globalIndex[],
  *   cycles[], entryTrees[], stats
@@ -103,7 +103,7 @@ function buildGraph(projectRoot, options) {
     }
 
     parsed.scripts.forEach((script) => {
-      // 非真代码 script：只登记，不走 JS 分析
+      // Non-real script: register only, skip JS analysis
       if (script.isRealCode === false || !script.ast) {
         fileNode.scripts.push({
           id: script.id,
@@ -142,7 +142,7 @@ function buildGraph(projectRoot, options) {
 
       ie.imports.forEach((imp) => {
         const toRel = imp.resolved ? toPosixRel(imp.resolved, config.root) : null
-        // 解析到项目内但非分析范围（如 .scss）时标为 asset，不进依赖图节点
+        // Resolved inside project but outside analysis scope (e.g. .scss): mark asset, not a graph node
         const inGraph = !!(toRel && fileRelSet.has(toRel))
         const edge = {
           from: rel,
@@ -193,7 +193,7 @@ function buildGraph(projectRoot, options) {
         }
       })
 
-      // 多 script：合并 scope（vue SFC 可能有两个）
+      // Multiple scripts: merge scopes (Vue SFC may have two)
       if (!fileNode.scopeTree) {
         fileNode.scopeTree = scopeTree
       } else {
@@ -213,7 +213,7 @@ function buildGraph(projectRoot, options) {
       fileNode.globals = fileNode.globals.concat(globals)
       allGlobals.push(...globals)
 
-      // mixin 应用（此时 imports 边已写入 fileNode.imports）
+      // Mixin applications (import edges already written on fileNode.imports)
       const mixinApps = analyzeMixinApplications(script.ast, meta, fileNode.imports)
       fileNode.mixinApps = fileNode.mixinApps.concat(mixinApps)
     })
@@ -225,7 +225,7 @@ function buildGraph(projectRoot, options) {
     files.set(rel, fileNode)
   })
 
-  // 填充 importers / importees
+  // Fill importers / importees
   edges.forEach((e) => {
     const from = files.get(e.from)
     const to = files.get(e.to)
@@ -233,17 +233,17 @@ function buildGraph(projectRoot, options) {
     if (to && e.from && !to.importers.includes(e.from)) to.importers.push(e.from)
   })
 
-  // mixin 汇总 + 成员反查索引（需要各文件 AST）
+  // Mixin summary + member reverse index (needs per-file ASTs)
   const allMixinApps = []
   files.forEach((f) => {
     allMixinApps.push(...(f.mixinApps || []))
   })
   const mixinIndex = buildMixinIndex(allMixinApps, files)
 
-  // 环检测（Tarjan SCC，只报 size>1 或自环）
+  // Cycle detection (Tarjan SCC; report size>1 or self-loops only)
   const cycles = findCycles(Array.from(files.keys()), edges)
 
-  // 入口树：main.js / main.ts 等
+  // Entry trees: main.js / main.ts etc.
   const entryCandidates = ['src/main.js', 'src/main.ts', 'src/main.mjs', 'src/App.vue']
   const entryTrees = []
   entryCandidates.forEach((entry) => {

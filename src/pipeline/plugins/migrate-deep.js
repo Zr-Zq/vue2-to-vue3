@@ -4,12 +4,12 @@ const { applySfcTransforms } = require('../../transform/apply-sfc')
 
 module.exports = createPlugin({
   name: 'migrate-deep',
-  description: '>>> /deep/ ::v-deep → :deep()',
+  description: '>>> /deep/ ::v-deep / ::deep() → :deep()',
   version: '0.1.0',
   defaults: { enabled: true },
   match(ctx, api) {
     if (api.options && api.options.enabled === false) return false
-    return /::v-deep|\/deep\/|>>>/.test(ctx.file.content)
+    return /::v-deep|::deep\s*\(|\/deep\/|>>>/.test(ctx.file.content)
   },
   async transform(ctx, api) {
     if (api.options && api.options.enabled === false) return
@@ -27,7 +27,7 @@ module.exports = createPlugin({
         ctx.report({
           level: 'info',
           plugin: 'migrate-deep',
-          message: 'deep 选择器 ×' + result.changes.length,
+          message: 'deep selectors ×' + result.changes.length,
         })
       }
       return
@@ -39,7 +39,7 @@ module.exports = createPlugin({
         ctx.report({
           level: 'info',
           plugin: 'migrate-deep',
-          message: 'deep 选择器 ×' + result.changes.length,
+          message: 'deep selectors ×' + result.changes.length,
         })
       }
     }

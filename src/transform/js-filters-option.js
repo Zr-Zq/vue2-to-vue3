@@ -1,6 +1,6 @@
 /**
- * options.filters → 合并进 methods（Vue3 无 filters）
- * 模板侧 | 已由 html-filters 改成函数调用，需能在 methods 里找到同名函数。
+ * options.filters → merge into methods (Vue3 has no filters)
+ * Template | already rewritten to calls by html-filters; same-named functions must exist in methods.
  */
 const traverse = require('@babel/traverse').default
 const generate = require('@babel/generator').default
@@ -22,20 +22,20 @@ function migrateFiltersOption(code, filename) {
   let methodsPath = null
   let rootObj = null
 
-  // 找 export default { ... } 或 Vue 组件选项对象里的 filters / methods
+  // Find filters / methods on export default { ... } or Vue component options objects
   traverse(ast, {
     ExportDefaultDeclaration(p) {
       if (t.isObjectExpression(p.node.declaration)) rootObj = p.node.declaration
     },
     ObjectProperty(p) {
-      // 只处理顶层 options（父级是 rootObj 或 CallExpression defineComponent/Vue.extend 参数）
+      // Only top-level options (parent is rootObj or CallExpression defineComponent/Vue.extend arg)
       const key =
         t.isIdentifier(p.node.key) ? p.node.key.name : t.isStringLiteral(p.node.key) ? p.node.key.value : null
       if (!key) return
       const parentObj = p.parentPath && p.parentPath.node
       if (!t.isObjectExpression(parentObj)) return
 
-      // 启发式：含 filters 的对象即组件选项
+      // Heuristic: object containing filters is a component options object
       if (key === 'filters' && t.isObjectExpression(p.node.value)) {
         filtersNode = p.node.value
         filtersPath = p
@@ -54,7 +54,7 @@ function migrateFiltersOption(code, filename) {
     filtersPath.remove()
     changes.push({ kind: 'filters-remove-empty' })
   } else if (methodsNode) {
-    // 合并：同名跳过（保留 methods）
+    // Merge: skip same names (keep methods)
     const existing = new Set()
     methodsNode.properties.forEach((prop) => {
       const k = t.isIdentifier(prop.key)
@@ -79,7 +79,7 @@ function migrateFiltersOption(code, filename) {
     })
     filtersPath.remove()
   } else {
-    // 无 methods：把 filters 键改名为 methods
+    // No methods: rename filters key to methods
     if (t.isIdentifier(filtersPath.node.key)) filtersPath.node.key.name = 'methods'
     else if (t.isStringLiteral(filtersPath.node.key)) filtersPath.node.key.value = 'methods'
     changes.push({ kind: 'filters-rename-methods' })

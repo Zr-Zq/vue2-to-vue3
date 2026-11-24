@@ -27,10 +27,10 @@ function scanProvideObject(obj, file, project, loc) {
         level: 'warn',
         auto: 'partial',
         file,
-        message: 'provide 原始类型键 "' + key + '"（Vue2 不响应）',
+        message: 'provide primitive key "' + key + '" (not reactive in Vue2)',
         loc: locOf(prop) || loc,
         evidence: key,
-        hint: '自动包 ref/reactive 可能改变调用方语义，需确认',
+        hint: 'Auto-wrapping ref/reactive may change callers; confirm',
       })
     }
   })
@@ -38,7 +38,7 @@ function scanProvideObject(obj, file, project, loc) {
 
 module.exports = createPlugin({
   name: 'risk-provide-primitive',
-  description: '检出 provide 字面量原始类型',
+  description: 'Detect provide of literal primitives',
   version: '0.1.0',
   match(ctx) {
     return /provide\s*[:(]/.test(ctx.file.content)

@@ -1,11 +1,11 @@
 const { createPlugin } = require('../create-plugin')
 
 /**
- * Vue Router 3 → 4 插件位
+ * Vue Router 3 → 4 plugin slot.
  */
 module.exports = createPlugin({
   name: 'router',
-  description: 'Vue Router 迁移处理（可插拔）',
+  description: 'Vue Router migration (pluggable)',
   version: '0.1.0',
   defaults: { mode: 'detect' },
   match(ctx) {

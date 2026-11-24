@@ -31,7 +31,7 @@ function objectKeys(objExpr) {
 }
 
 /**
- * 从 mixin 对象字面量抽出可注入成员
+ * Extract injectable members from a mixin object literal
  */
 function extractMixinMembersFromObject(objExpr) {
   const members = []
@@ -64,7 +64,7 @@ function extractMixinMembersFromObject(objExpr) {
         })
       }
     } else if (section === 'data') {
-      // data() { return { a, b } } 或 data: () => ({…})
+      // data() { return { a, b } } or data: () => ({…})
       const fn = t.isObjectMethod(prop)
         ? prop
         : t.isFunctionExpression(prop.value) || t.isArrowFunctionExpression(prop.value)
@@ -113,7 +113,7 @@ function extractMixinMembersFromObject(objExpr) {
 }
 
 /**
- * 解析本地绑定名 → 导入源（文件相对路径）
+ * Resolve local binding name → import source (file-relative path)
  */
 function resolveLocalToImport(localName, imports) {
   if (!localName || !imports) return null
@@ -135,7 +135,7 @@ function resolveLocalToImport(localName, imports) {
 }
 
 /**
- * 收集本文件对 mixin 的「应用」：
+ * Collect mixin "applications" in this file:
  * - Vue.mixin(x) / app.mixin(x) → global
  * - mixins: [a, b, createX()] → local
  */
@@ -211,7 +211,7 @@ function analyzeMixinApplications(ast, meta, imports) {
       if (!t.isIdentifier(p.node.key, { name: 'mixins' }) && !(t.isStringLiteral(p.node.key) && p.node.key.value === 'mixins')) {
         return
       }
-      // 只关心组件选项里的 mixins（避免无关对象）
+      // Only care about mixins in component options (ignore unrelated objects)
       const val = p.node.value
       if (!t.isArrayExpression(val)) return
       val.elements.forEach((el) => {
@@ -251,7 +251,7 @@ function analyzeMixinApplications(ast, meta, imports) {
 }
 
 /**
- * 从已解析的 mixin 模块 AST 抽出导出成员（default export 对象 / 工厂 return）
+ * Extract exported members from a parsed mixin module AST (default export object / factory return)
  */
 function extractMixinModuleMembers(ast) {
   const result = { members: [], kind: null }
@@ -265,7 +265,7 @@ function extractMixinModuleMembers(ast) {
         result.members = extractMixinMembersFromObject(d)
         p.stop()
       } else if (t.isIdentifier(d)) {
-        // export default foo — 在 bindings 里追
+        // export default foo — follow via bindings
         const binding = p.scope.getBinding(d.name)
         if (binding && binding.path) {
           if (binding.path.isVariableDeclarator() && t.isObjectExpression(binding.path.node.init)) {
@@ -312,7 +312,7 @@ function extractReturnObjectMembers(fnNode) {
 }
 
 /**
- * 同文件内 const foo = { methods... } / function foo(){ return {...} }
+ * Same-file const foo = { methods... } / function foo(){ return {...} }
  */
 function extractLocalBindingMixin(ast, localName) {
   if (!ast || !localName) return null
@@ -340,7 +340,7 @@ function extractLocalBindingMixin(ast, localName) {
 }
 
 /**
- * 汇总：applications + 每个 mixin 文件的 members + 成员反查索引
+ * Summarize: applications + members per mixin file + member reverse index
  */
 function buildMixinIndex(applications, filesMap) {
   const mixinFiles = new Map() // path -> { path, kind, members, appliedBy[] }
@@ -351,7 +351,7 @@ function buildMixinIndex(applications, filesMap) {
       const fileNode = filesMap.get(rel)
       let extracted = { members: [], kind: null }
       if (fileNode && fileNode._asts) {
-        // 使用第一段 script ast
+        // Use first script AST
         const ast = fileNode._asts[0]
         extracted = extractMixinModuleMembers(ast)
       }
@@ -366,7 +366,7 @@ function buildMixinIndex(applications, filesMap) {
   }
 
   applications.forEach((app) => {
-    // 未解析到导入文件：尝试同文件本地绑定
+    // Import file not resolved: try same-file local binding
     if (!app.mixinFile && app.localName && !app.inline) {
       const host = filesMap.get(app.file)
       if (host && host._asts) {
@@ -402,7 +402,7 @@ function buildMixinIndex(applications, filesMap) {
         })
       }
     } else if (app.inline && app.members) {
-      // 内联 mixin：用 host#inline#line 作伪路径
+      // Inline mixin: use host#inline#line as pseudo path
       const pseudo = app.file + '#inline:' + (app.loc && app.loc.line)
       mixinFiles.set(pseudo, {
         path: pseudo,
@@ -422,7 +422,7 @@ function buildMixinIndex(applications, filesMap) {
     }
   })
 
-  // 成员 → 来源反查
+  // Member → source reverse lookup
   const memberIndex = []
   mixinFiles.forEach((mf) => {
     mf.members.forEach((m) => {
@@ -448,7 +448,7 @@ function buildMixinIndex(applications, filesMap) {
 }
 
 /**
- * 快速查询：按名字找全局修改点 / mixin 注入成员
+ * Quick lookup: find global mutation sites / mixin-injected members by name
  */
 function lookupSymbol(graph, name) {
   const q = String(name || '').replace(/^this\./, '').replace(/^Vue\.prototype\./, '')
@@ -462,7 +462,7 @@ function lookupSymbol(graph, name) {
     (m) => m.name === q || m.name === '$' + q
   )
 
-  // 文件顶层同名绑定（声明点，非修改全局）
+  // Same-name binding at file top (declaration site, not a global mutation)
   const scopes = []
   ;(graph.files || []).forEach((f) => {
     ;(f.scopeFlat || []).forEach((b) => {

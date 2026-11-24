@@ -1,10 +1,10 @@
 /**
- * 模板过滤器 | → 函数调用（确定性）
+ * Template filter | → function call (deterministic)
  * {{ a | f }} → {{ f(a) }}
  * {{ a | f(x) | g }} → {{ g(f(a, x)) }}
  * :title="a | f" → :title="f(a)"
  *
- * 同时把 options.filters 合并进 methods（由 js-filters-option 负责）
+ * Also merge options.filters into methods (handled by js-filters-option)
  */
 
 function splitPipes(expr) {
@@ -39,7 +39,7 @@ function splitPipes(expr) {
       continue
     }
     if (ch === '|' && depth === 0) {
-      // 避免 ||
+      // Avoid ||
       if (s[i + 1] === '|') {
         cur += '||'
         i += 1
@@ -89,7 +89,7 @@ function rewriteMustacheFilters(code) {
 function rewriteBindFilters(code) {
   const changes = []
   const filterNames = []
-  // :attr="..." / v-bind:attr="..." 且值含 |
+  // :attr="..." / v-bind:attr="..." whose value contains |
   const out = String(code || '').replace(
     /((?:(?::)|(?:v-bind:))[A-Za-z_@:][\w.:-]*)\s*=\s*(["'])([\s\S]*?)\2/g,
     (full, name, q, val) => {
@@ -108,12 +108,12 @@ function rewriteBindFilters(code) {
 function rewriteListenersAttr(code) {
   const changes = []
   let out = String(code || '')
-  // v-on="$listeners" → v-bind="$attrs"；若同行已有 v-bind="$attrs" 则删掉 v-on
+  // v-on="$listeners" → v-bind="$attrs"; if same tag already has v-bind="$attrs", drop v-on
   out = out.replace(/\s+v-on\s*=\s*(["'])\$listeners\1/g, (m) => {
     changes.push({ kind: 'v-on-listeners-to-attrs' })
     return ' v-bind="$attrs"'
   })
-  // 去重：同一标签上两个 v-bind="$attrs"
+  // Dedupe: two v-bind="$attrs" on the same tag
   out = out.replace(
     /<([A-Za-z][\w.-]*)(\s[^>]*?\bv-bind\s*=\s*(["'])\$attrs\3[^>]*?\bv-bind\s*=\s*(["'])\$attrs\4[^>]*)(\/?)>/g,
     (full, tag, attrs, q1, q2, slash) => {

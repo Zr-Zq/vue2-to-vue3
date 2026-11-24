@@ -1,10 +1,10 @@
 /**
- * render(h) → Vue3：
- * - 去掉 render 的 h 参数
- * - 补 import { h } from 'vue'
+ * render(h) → Vue3:
+ * - Remove render h parameter
+ * - Add import { h } from 'vue'
  * - this.$scopedSlots → this.$slots
  *
- * 另：h() 第二参里的 attrs/on/domProps 尽量拍平（常见子集）
+ * Also: flatten attrs/on/domProps in h() 2nd arg when possible (common subset)
  */
 const traverse = require('@babel/traverse').default
 const t = require('@babel/types')
@@ -26,7 +26,7 @@ function hasHImport(ast) {
 
 function ensureHImport(code, ast) {
   if (hasHImport(ast)) return { code, added: false }
-  // 已有 import Vue from 'vue' 时追加 { h }
+  // When import Vue from 'vue' exists, append { h }
   const vueImport = /import\s+Vue\s*,\s*\{([^}]*)\}\s*from\s*['"]vue['"]/
   const vueImportNamed = /import\s*\{([^}]*)\}\s*from\s*['"]vue['"]/
   const vueDefault = /import\s+Vue\s+from\s*['"]vue['"]/
@@ -55,7 +55,7 @@ function ensureHImport(code, ast) {
       added: true,
     }
   }
-  // 插到首个 import 前或文件头
+  // Insert before first import or at file head
   const m = code.match(/^(\s*)import\s/m)
   if (m) {
     const idx = code.indexOf(m[0])
@@ -79,8 +79,8 @@ function stripHParam(fnNode) {
 }
 
 /**
- * 拍平 h 第二参：{ attrs, on, domProps, props, class, style, key, ref, ... }
- * → Vue3 扁平对象（常见子集；复杂嵌套仍保留）
+ * Flatten h 2nd arg: { attrs, on, domProps, props, class, style, key, ref, ... }
+ * → Vue3 flat object (common subset; keep complex nesting)
  */
 function flattenHDataObject(objExpr) {
   if (!t.isObjectExpression(objExpr)) return null
@@ -119,7 +119,7 @@ function flattenHDataObject(objExpr) {
   const nextProps = rest.slice()
 
   if (staticClass) {
-    // 与已有 class 合并较难；无 class 时直接 class: staticClass
+    // Merging with existing class is hard; if no class, use class: staticClass
     const hasClass = nextProps.some(
       (p) =>
         t.isObjectProperty(p) &&
@@ -127,7 +127,7 @@ function flattenHDataObject(objExpr) {
           (t.isStringLiteral(p.key) && p.key.value === 'class'))
     )
     if (!hasClass) nextProps.push(t.objectProperty(t.identifier('class'), staticClass))
-    else nextProps.push(t.objectProperty(t.identifier('class'), staticClass)) // 简化：后写覆盖/并存由运行时处理
+    else nextProps.push(t.objectProperty(t.identifier('class'), staticClass)) // Simplified: later writes overwrite / coexistence left to runtime
   }
   if (staticStyle) {
     nextProps.push(t.objectProperty(t.identifier('style'), staticStyle))
@@ -159,7 +159,7 @@ function flattenHDataObject(objExpr) {
     })
   }
   mapOnBag(bags.on)
-  mapOnBag(bags.nativeOn) // Vue3 无 .native，打平到 onXxx
+  mapOnBag(bags.nativeOn) // Vue3 has no .native; flatten into onXxx
   return t.objectExpression(nextProps)
 }
 
@@ -226,7 +226,7 @@ function migrateRenderH(code, filename) {
   })
 
   if (!stripped && !scopedSlots && !flattened) {
-    // 仍清理注释里的旧 API 文案，避免误导
+    // Still clean old API wording in comments to avoid misleading readers
     const cleaned = code.replace(/this\.\$scopedSlots\b/g, 'this.$slots')
     if (cleaned !== code) {
       return {
@@ -238,7 +238,7 @@ function migrateRenderH(code, filename) {
     return { code, changes }
   }
 
-  // 用 @babel/generator 更稳；若无依赖则手工难以还原。检查是否有 generator。
+  // @babel/generator is more reliable; without it, hand-restore is hard. Check for generator.
   let generate
   try {
     generate = require('@babel/generator').default
@@ -250,7 +250,7 @@ function migrateRenderH(code, filename) {
   if (generate) {
     nextCode = generate(ast, { retainLines: true, compact: false, comments: true }, code).code
   } else {
-    // 无 generator：仅做文本级 strip render(h) / $scopedSlots（不拍平 h data）
+    // No generator: text-level strip of render(h) / $scopedSlots only (no h data flatten)
     nextCode = code
       .replace(/\brender\s*\(\s*h\s*\)\s*\{/g, 'render() {')
       .replace(/\brender\s*:\s*\(\s*h\s*\)\s*=>/g, 'render: () =>')
@@ -259,13 +259,13 @@ function migrateRenderH(code, filename) {
     changes.push({ kind: 'render-text-fallback', note: 'no @babel/generator' })
   }
 
-  // 注释里的 this.$scopedSlots 一并替换（generator 会保留原注释文本）
+  // Also replace this.$scopedSlots in comments (generator keeps original comment text)
   if (/this\.\$scopedSlots\b/.test(nextCode)) {
     nextCode = nextCode.replace(/this\.\$scopedSlots\b/g, 'this.$slots')
     changes.push({ kind: 'scopedSlots-in-comments' })
   }
 
-  // 只有去掉了 h 参数（或代码里仍在调用 h(）时才补 import
+  // Only add import after removing h param (or when code still calls h()
   const needsH =
     stripped > 0 ||
     (flattened > 0 && /\bh\s*\(/.test(nextCode)) ||

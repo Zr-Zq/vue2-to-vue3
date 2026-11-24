@@ -5,7 +5,8 @@ const { createFileContext, createProjectContext } = require('./context')
 const { toPosixRel } = require('../resolve')
 
 /**
- * 主流水线：文件依次过每个启用插件，上一阶段输出作为下一阶段输入。
+ * Main pipeline: each file runs through enabled plugins in order;
+ * previous stage output becomes next stage input.
  */
 async function runPipeline(options) {
   const opts = options || {}
@@ -14,11 +15,11 @@ async function runPipeline(options) {
   const root = path.resolve(opts.root || config.__root)
   const fromDir = config.__loadedFrom ? path.dirname(config.__loadedFrom) : root
 
-  // 前置风险流水线 + 迁移流水线（顺序可配、可热插拔）
+  // Preflight risk pipeline + migration pipeline (order configurable / hot-pluggable)
   const preflightEntries = Array.isArray(config.preflightPipeline) ? config.preflightPipeline : []
   const transformEntries = Array.isArray(config.pipeline) ? config.pipeline : []
   const stages = registry.resolvePipeline(preflightEntries.concat(transformEntries), fromDir)
-  // 合并全局 pluginOptions
+  // Merge global pluginOptions
   stages.forEach((s) => {
     const globalOpt = (config.pluginOptions && config.pluginOptions[s.name]) || {}
     s.options = Object.assign({}, s.options, globalOpt)
@@ -79,7 +80,7 @@ async function runPipeline(options) {
         fileCtx.report({
           level: 'error',
           plugin: stage.name,
-          message: 'match 失败: ' + e.message,
+          message: 'match failed: ' + e.message,
         })
         project.stats.errors += 1
         continue
@@ -97,7 +98,7 @@ async function runPipeline(options) {
         fileCtx.report({
           level: 'error',
           plugin: stage.name,
-          message: 'transform 失败: ' + e.message,
+          message: 'transform failed: ' + e.message,
         })
         project.stats.errors += 1
         bumpPlugin(project, stage.name, 'errors')
@@ -115,7 +116,7 @@ async function runPipeline(options) {
 
     if (fileCtx.changed) project.stats.changed += 1
 
-    // 写出
+    // Write out
     if (!project.dryRun && fileCtx.changed && !fileCtx.file.aborted) {
       const outPath = resolveOutPath(project, fileCtx.file)
       fs.mkdirSync(path.dirname(outPath), { recursive: true })
@@ -160,7 +161,7 @@ function createApi(project, stages) {
         console.log('[pipeline]', msg)
       }
     },
-    /** 查前置图：全局 / mixin */
+    /** Look up preflight graph: globals / mixins */
     lookup(name) {
       if (!project.graph) return null
       try {

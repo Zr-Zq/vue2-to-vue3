@@ -1,5 +1,5 @@
 /**
- * functional → 普通组件 单测（覆盖官方文档常见写法）
+ * Unit tests: functional → normal component (common official patterns)
  *   node test/functional.test.js
  */
 const assert = require('assert')
@@ -18,7 +18,7 @@ function ok(cond, msg) {
 
 function migrateVue(src) {
   let content = String(src || '').replace(
-    /^[ \t]*\/\*\s*迁移脚本注释:[\s\S]*?\*\/[ \t]*\r?\n/gm,
+    /^[ \t]*\/\*\s*(?:迁移脚本注释:\s*)?AI-TODO:?[\s\S]*?\*\/[ \t]*\r?\n/gm,
     (m) => (/\[functional\]/.test(m) ? '' : m)
   )
   const s = stripTemplateFunctionalAttr(content)
@@ -46,7 +46,7 @@ function migrateVue(src) {
   return out
 }
 
-console.log('== 官方 SFC 示例：props + attrs + listeners ==')
+console.log('== official SFC sample: props + attrs + listeners ==')
 {
   // https://v3-migration.vuejs.org/breaking-changes/functional-components.html
   const src = [
@@ -69,7 +69,7 @@ console.log('== 官方 SFC 示例：props + attrs + listeners ==')
   ok(!/v-on="listeners"/.test(r.content), 'listeners dropped')
 }
 
-console.log('== LcFunctional 风格：data.attrs + data.staticClass ==')
+console.log('== LcFunctional style: data.attrs + data.staticClass ==')
 {
   const src = [
     '<template functional>',
@@ -104,7 +104,7 @@ console.log('== FunctionalTag：props + slot + listeners ==')
   ok(/<slot>/.test(r.content), 'slot kept')
 }
 
-console.log('== props 下标 / slots ==')
+console.log('== props index / slots ==')
 {
   const body = rewriteFunctionalTemplateBody(
     "<div>{{ props['msg'] }} {{ slots.default }} {{ scopedSlots.x }}</div>"
@@ -131,7 +131,7 @@ console.log('== JS render(h, ctx) functional ==')
   ok(/render\s*\(\s*h\s*\)/.test(r.code) || /render\s*\(h\)/.test(r.code), 'single h param')
 }
 
-console.log('== 幂等 ==')
+console.log('== idempotent ==')
 {
   const src = [
     '<template functional>',

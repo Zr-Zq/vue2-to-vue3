@@ -1,16 +1,17 @@
 /**
- * 项目根下「独立旁路目录」：script / test / style 等，不在默认 src 内。
- * - copy：存在则整目录拷到底座同名路径
- * - pipeline：纳入扫描；若文件无 Vue/Element/Router/Vuex 用法，插件通常自然 no-op
+ * Root-level sidecar dirs (script / test / style, …) outside default `src`.
+ * - copy: if present, copy the whole tree to the same name under the target
+ * - pipeline: include in scan; files without Vue/Element/Router/Vuex usually no-op
  *
- * 绝不迁：node_modules / dist / 构建产物 / VCS / 工具缓存（见 SIDECAR_NEVER_COPY）
+ * Never migrate: node_modules / dist / build artifacts / VCS / tool caches
+ * (see SIDECAR_NEVER_COPY).
  */
 const fs = require('fs')
 const path = require('path')
 
 /**
- * 硬排除：即使误写进白名单也不拷、不扫
- * （依赖、构建输出、版本控制、本工具工作区等）
+ * Hard denylist: never copy or scan even if mistakenly whitelisted
+ * (deps, build output, VCS, this tool's workdir, caches).
  */
 const SIDECAR_NEVER_COPY = new Set(
   [
@@ -34,7 +35,7 @@ const SIDECAR_NEVER_COPY = new Set(
   ].map((s) => s.toLowerCase())
 )
 
-/** 常见根级旁路目录名（白名单；与 NEVER 交集会被滤掉） */
+/** Common root sidecar names (whitelist; intersect NEVER is filtered out). */
 const SIDECAR_DIR_NAMES = [
   'script',
   'scripts',
@@ -53,7 +54,7 @@ const SIDECAR_DIR_NAMES = [
   'vendor',
   'vendors',
   'cdn',
-  'assets', // 仅当与 src/assets 并列的根级 assets
+  'assets', // root-level assets only when sibling to src/assets
 ].filter((name) => !SIDECAR_NEVER_COPY.has(name.toLowerCase()))
 
 function isNeverCopyDir(name) {
@@ -61,7 +62,8 @@ function isNeverCopyDir(name) {
 }
 
 /**
- * 列出源根下实际存在的旁路目录（相对名）；永不返回 node_modules/dist 等
+ * List sidecar dirs that actually exist under the project root (relative names).
+ * Never returns node_modules/dist/etc.
  */
 function listSidecarDirs(projectRoot) {
   const root = path.resolve(projectRoot)
@@ -76,7 +78,7 @@ function listSidecarDirs(projectRoot) {
 }
 
 /**
- * 粗判文本是否像 Vue 技术栈（用于 AI/报告；流水线仍可扫全量）
+ * Heuristic: does text look like a Vue stack? (for AI/reports; pipeline may still scan all)
  */
 function looksLikeVueStack(code) {
   const s = String(code || '')
@@ -94,14 +96,14 @@ function looksLikeVueStack(code) {
   )
 }
 
-/** 流水线额外 include glob（相对项目根）；排除 NEVER 目录 */
+/** Extra pipeline include globs (relative to project root); NEVER dirs excluded. */
 function sidecarIncludeGlobs() {
   return SIDECAR_DIR_NAMES.filter((d) => !isNeverCopyDir(d)).map(
     (d) => d + '/**/*.{js,jsx,ts,tsx,vue,mjs,cjs,scss,sass,less,css,html}'
   )
 }
 
-/** copy 树内 ignore（嵌套的 node_modules/dist 也不跟） */
+/** Ignore globs when copying a sidecar tree (nested node_modules/dist too). */
 function sidecarCopyIgnoreGlobs() {
   return [
     '**/node_modules/**',

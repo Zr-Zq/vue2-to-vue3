@@ -1,5 +1,5 @@
 /**
- * render(h) 单独测试（不跑全流水线）
+ * Standalone render(h) tests (not the full pipeline)
  *
  *   node test/render-h.test.js
  */
@@ -18,7 +18,7 @@ function ok(cond, msg) {
   console.log('  ok:', msg)
 }
 
-section('1) render(h) 去参 + import { h }')
+section('1) render(h) drop arg + import { h }')
 {
   const src = `
 export default {
@@ -36,7 +36,7 @@ export default {
   console.log('  changes:', r.changes.map((c) => c.kind).join(', '))
 }
 
-section('2) render: (h) => 箭头')
+section('2) render: (h) => arrow')
 {
   const src = `export default { render: (h) => h(App) }`
   const r = migrateRenderH(src, 'main-like.js')
@@ -58,7 +58,7 @@ export default {
   ok(!/this\.\$scopedSlots/.test(r.code), 'no scopedSlots left')
 }
 
-section('4) 真实 fixture：LcRenderChild.vue')
+section('4) real fixture: LcRenderChild.vue')
 {
   const file = path.resolve(
     __dirname,
@@ -66,7 +66,7 @@ section('4) 真实 fixture：LcRenderChild.vue')
   )
   const raw = fs.readFileSync(file, 'utf8')
   const result = applySfcTransforms(raw, file, null, (js) => migrateRenderH(js, file))
-  // 可能已被 --write 迁过：允许 0 changes，但结果必须已是 Vue3 形态
+  // May already be migrated via --write: 0 changes ok if result is already Vue3 shape
   ok(
     result.changes.length > 0 || /render\s*\(\s*\)\s*\{/.test(raw),
     'fixture changed or already migrated'

@@ -29,7 +29,7 @@ function collectSpecifiers(node) {
 }
 
 /**
- * 从 AST 收集 import / require / export / dynamic import
+ * Collect import / require / export / dynamic import from AST
  */
 function analyzeImportsExports(ast, fromFile, config) {
   const imports = []
@@ -72,7 +72,7 @@ function analyzeImportsExports(ast, fromFile, config) {
             loc: locOf(p.node),
           })
         } else if (t.isArrayExpression(arg)) {
-          // require(['./a', './b'], cb) 或 require([`./${x}`])
+          // require(['./a', './b'], cb) or require([`./${x}`])
           arg.elements.forEach((el) => {
             if (!el) return
             if (t.isStringLiteral(el)) {

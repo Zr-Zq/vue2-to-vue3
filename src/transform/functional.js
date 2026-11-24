@@ -1,16 +1,16 @@
 /**
- * Vue2 functional → Vue3 普通组件（官方迁移路径）
+ * Vue2 functional → Vue3 normal component (official migration path)
  * @see https://v3-migration.vuejs.org/breaking-changes/functional-components.html
  *
- * SFC：
+ * SFC:
  * - <template functional> → <template>
- * - props.x → $props.x；attrs / data.attrs → $attrs
- * - v-on="listeners" 删除（listeners 已并入 $attrs）
- * - data.staticClass / data.class / data.style → $attrs 对应字段或删除
- * - functional: true 删除
+ * - props.x → $props.x; attrs / data.attrs → $attrs
+ * - Remove v-on="listeners" (listeners merged into $attrs)
+ * - data.staticClass / data.class / data.style → matching $attrs fields or remove
+ * - Remove functional: true
  *
- * JS：
- * - { functional: true, render(h, ctx) } → 普通 render / 或保留 render 去第二参上下文（见下）
+ * JS:
+ * - { functional: true, render(h, ctx) } → normal render / or keep render and drop 2nd-arg context (below)
  */
 
 const traverse = require('@babel/traverse').default
@@ -19,13 +19,13 @@ const t = require('@babel/types')
 const { parseJs } = require('../parse-file')
 
 /**
- * 改写 functional 模板正文（不含 <template> 标签本身）
+ * Rewrite functional template body (not the <template> tag itself)
  */
 function rewriteFunctionalTemplateBody(code) {
   const changes = []
   let out = String(code || '')
 
-  // v-on="listeners" / v-on='listeners' → 删除（$attrs 已含事件）
+  // v-on="listeners" / v-on='listeners' → remove ($attrs already includes events)
   out = out.replace(/\s+v-on\s*=\s*(["'])listeners\1/g, () => {
     changes.push({ kind: 'fn-drop-listeners' })
     return ''
@@ -46,7 +46,7 @@ function rewriteFunctionalTemplateBody(code) {
     return 'v-bind=' + q + '$attrs' + q
   })
 
-  // :class="data.staticClass" / data.class → 可并入 $attrs；单根透传时常删
+  // :class="data.staticClass" / data.class → can merge into $attrs; often removed with single-root fallthrough
   out = out.replace(/\s+:class\s*=\s*(["'])data\.staticClass\1/g, () => {
     changes.push({ kind: 'fn-drop-staticClass' })
     return ''
@@ -60,7 +60,7 @@ function rewriteFunctionalTemplateBody(code) {
     return ' :style=' + q + '$attrs.style' + q
   })
 
-  // props.xxx / props['x'] → $props.xxx（避免已是 $props）
+  // props.xxx / props['x'] → $props.xxx (avoid if already $props)
   out = out.replace(/(^|[^$])\bprops\./g, (m, lead) => {
     changes.push({ kind: 'fn-props-dot' })
     return lead + '$props.'
@@ -70,13 +70,13 @@ function rewriteFunctionalTemplateBody(code) {
     return lead + '$props['
   })
 
-  // 插值/表达式里的裸 attrs. / listeners.（少见）
+  // Bare attrs. / listeners. in interpolations/expressions (rare)
   out = out.replace(/(^|[^$])\battrs\./g, (m, lead) => {
     changes.push({ kind: 'fn-attrs-dot' })
     return lead + '$attrs.'
   })
 
-  // slots.default → $slots.default（模板里）
+  // slots.default → $slots.default (in template)
   out = out.replace(/(^|[^$])\bslots\./g, (m, lead) => {
     changes.push({ kind: 'fn-slots' })
     return lead + '$slots.'
@@ -90,8 +90,8 @@ function rewriteFunctionalTemplateBody(code) {
 }
 
 /**
- * 整文件：去掉真正的 SFC 开标签 <template functional>
- * （不碰注释/字符串里的同名片段）
+ * Whole file: strip real SFC open tag <template functional>
+ * (do not touch same text inside comments/strings)
  */
 function stripTemplateFunctionalAttr(vueSource) {
   const changes = []
@@ -133,7 +133,7 @@ function removeFunctionalOption(code, filename) {
     },
   })
 
-  // render(h, ctx) 且曾是 functional：把第二参解构映射到 this/$attrs（尽力）
+  // render(h, ctx) that was functional: map 2nd-arg destructure to this/$attrs (best effort)
   traverse(ast, {
     ObjectMethod(p) {
       if (!t.isIdentifier(p.node.key, { name: 'render' })) return
@@ -145,9 +145,9 @@ function removeFunctionalOption(code, filename) {
       const fn = p.node.value
       if (!t.isFunctionExpression(fn) && !t.isArrowFunctionExpression(fn)) return
       if (fn.params.length < 2) return
-      // 包成 ObjectMethod 风格处理：改 params + 注入声明
+      // Treat as ObjectMethod style: change params + inject decls
       const fake = { node: { key: p.node.key, params: fn.params, body: fn.body }, replaceWith() {} }
-      // 直接改 fn
+      // Rewrite fn directly
       rewriteFunctionalRenderFn(fn, changes)
     },
   })
@@ -165,9 +165,9 @@ function rewriteFunctionalRenderMethod(path, changes) {
 function rewriteFunctionalRenderFn(fnNode, changes) {
   // render(h, { props, data, children, listeners, scopedSlots, injections }) 
   // → render() { const props = this.$props; const data = { attrs: this.$attrs }; ... }
-  // 简化：去掉第二参，在函数体前插入 const 绑定
+  // Simplified: drop 2nd param; insert const bindings at function body start
   const ctxParam = fnNode.params[1]
-  fnNode.params = fnNode.params.slice(0, 1) // 保留 h，后续 migrate-render-h 再去
+  fnNode.params = fnNode.params.slice(0, 1) // keep h; migrate-render-h removes it later
 
   const decls = []
   function addConst(name, init) {
@@ -192,7 +192,7 @@ function rewriteFunctionalRenderFn(fnNode, changes) {
       } else if (key === 'listeners' || key === 'attrs') {
         addConst(local, t.memberExpression(t.thisExpression(), t.identifier('$attrs')))
       } else if (key === 'data') {
-        // data ≈ { attrs: $attrs } 近似
+        // data ≈ { attrs: $attrs } approximation
         addConst(
           local,
           t.objectExpression([
@@ -213,7 +213,7 @@ function rewriteFunctionalRenderFn(fnNode, changes) {
       } else if (key === 'scopedSlots' || key === 'slots') {
         addConst(local, t.memberExpression(t.thisExpression(), t.identifier('$slots')))
       } else if (key === 'injections') {
-        // 无法静态还原 inject，留空对象并记 change
+        // Cannot statically restore inject; leave empty object and record change
         addConst(local, t.objectExpression([]))
         changes.push({ kind: 'fn-render-injections-empty' })
       }
@@ -249,7 +249,7 @@ function rewriteFunctionalRenderFn(fnNode, changes) {
 }
 
 /**
- * 检测改写后是否仍残留难以脚本处理的 functional 上下文
+ * Detect remaining functional context that is hard to script-handle after rewrite
  */
 function residualFunctionalContext(code) {
   const c = String(code || '')
@@ -261,7 +261,7 @@ function residualFunctionalContext(code) {
 }
 
 /**
- * 迁移整份 .vue 或 .js
+ * Migrate a whole .vue or .js file
  * @returns {{ code: string, changes: object[], residual: string[] }}
  */
 function migrateFunctional(code, filename) {
@@ -274,18 +274,18 @@ function migrateFunctional(code, filename) {
     out = strip.code
     changes.push(...strip.changes)
 
-    // 对 template 块内容做上下文改写（用简单切分；精确写回由插件 applySfcTransforms）
+    // Rewrite template block body context (simple split; precise write-back via applySfcTransforms plugin)
     out = out.replace(
       /(<template\b[^>]*>)([\s\S]*?)(<\/template>)/gi,
       (full, open, body, close) => {
-        // 仅当本文件曾是 functional 或 body 含 props./listeners/data.attrs
+        // Only when file was functional or body contains props./listeners/data.attrs
         if (
           !strip.changes.length &&
           !/\bprops\.|\blisteners\b|\bdata\.attrs\b|\bscopedSlots\b/.test(body)
         ) {
           return full
         }
-        // 若从未 strip 且也无线索，跳过；若 strip 过或有线索则改
+        // Skip if never stripped and no clues; rewrite if stripped or clues exist
         if (
           strip.changes.length ||
           /\bprops\.|\bv-on\s*=\s*["']listeners["']|\bdata\.attrs\b|\battrs\b/.test(body)
@@ -300,12 +300,12 @@ function migrateFunctional(code, filename) {
   }
 
   const jsPart = removeFunctionalOption(out, filename)
-  // removeFunctionalOption 对整文件 parse 在 .vue 上会失败 → text fallback
+  // removeFunctionalOption whole-file parse fails on .vue → text fallback
   if (jsPart.changes.length) {
     out = jsPart.code
     changes.push(...jsPart.changes)
   } else if (isVue) {
-    // 只在 script 内去 functional: true
+    // Only remove functional: true inside script
     out = out.replace(
       /(<script\b[^>]*>)([\s\S]*?)(<\/script>)/gi,
       (full, open, body, close) => {
@@ -325,14 +325,14 @@ function migrateFunctional(code, filename) {
 }
 
 /**
- * 供 applySfcTransforms：只改 template body
+ * For applySfcTransforms: rewrite template body only
  */
 function migrateFunctionalTemplate(code) {
   return rewriteFunctionalTemplateBody(code)
 }
 
 /**
- * 供 applySfcTransforms：只改 script
+ * For applySfcTransforms: rewrite script only
  */
 function migrateFunctionalScript(code, filename) {
   return removeFunctionalOption(code, filename)

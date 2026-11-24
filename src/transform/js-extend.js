@@ -47,7 +47,7 @@ function ensureDefineComponentImport(code) {
 }
 
 /**
- * 把 `{ a: 1, b: 2 }` 对象字面量拆成「是否空 / 插入 extends」
+ * Split `{ a: 1, b: 2 }` object literal into "empty-or-not / insert extends"
  */
 function injectExtends(objLiteral, baseName) {
   const body = objLiteral.replace(/^\{/, '').replace(/\}$/, '')
@@ -67,7 +67,7 @@ function migrateExtend(code) {
     return to
   })
 
-  // Base.extend({ ... }) — 非 Vue. 的标识符
+  // Base.extend({ ... }) — identifier other than Vue.
   out = out.replace(
     /\b([A-Za-z_$][\w$]*)\.extend\s*\(\s*(\{[\s\S]*?\})\s*\)/g,
     (full, base, obj) => {

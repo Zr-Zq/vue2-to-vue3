@@ -1,21 +1,20 @@
 #!/usr/bin/env node
 /**
- * 【2to3 仓库内副本】缺失本地引用检测。
- * 格式与产物说明见：../docs/missing-refs-format.md
- * 请通过 bin/check-refs.js 调用；勿依赖用户全局 ~/.cursor/skills。
+ * In-repo copy (2to3): detect missing local import/require targets.
+ * Format docs: ../docs/missing-refs-format.md
+ * Call via bin/check-refs.js; do not depend on the user global ~/.cursor/skills.
  *
- * 校验本地 import/require 是否缺文件。
- * 别名来自每个文件向上找到的最近项目配置：
+ * Alias resolution uses the nearest project config walking up from each file:
  * - vite.config.* / vue.config.js / webpack.config.* / next.config.*
  * - jsconfig.json / tsconfig.json paths + baseUrl
- * - 默认兜底：@ -> src，~ -> 项目根或 src
+ * - Defaults: @ -> src, ~ -> project root or src
  *
- * 用法：
- *   node scripts/check-import-refs.mjs [项目根] --json [--files-from list.txt]
+ * Usage:
+ *   node scripts/check-import-refs.mjs [projectRoot] --json [--files-from list.txt]
  *   node scripts/check-import-refs.mjs --self-test
  *
- * 成功：--json 时 { ok:true, ... }，否则 true；exit 0
- * 失败：JSON（含 missing）；exit 1
+ * Success: with --json { ok:true, ... }, else true; exit 0
+ * Failure: JSON (with missing); exit 1
  */
 
 import fs from 'node:fs';
@@ -121,7 +120,7 @@ function parseJsonc(text) {
   return JSON.parse(stripJsonComments(text));
 }
 
-/** 把配置里的相对路径解析成绝对路径；支持对象/数组两种 alias 写法 */
+/** Resolve relative paths from config to absolute; supports object/array alias forms */
 function addAlias(map, key, value, root) {
   if (key == null || value == null) return;
   let k = String(key).replace(/\/\*$/, '').replace(/\*$/, '').replace(/\/$/, '');
@@ -131,7 +130,7 @@ function addAlias(map, key, value, root) {
     v = v.replacement || v.find || v[0];
   }
   if (typeof v !== 'string') return;
-  // tsconfig paths: "@/*" -> "src/*"，目标也要去掉通配符
+  // tsconfig paths: "@/*" -> "src/*"; strip wildcards from the target too
   v = v
     .replace(/['"`]/g, '')
     .replace(/\/\*$/, '')
@@ -164,13 +163,13 @@ function loadTsJsPaths(root, map) {
 }
 
 /**
- * 从一行 alias 赋值里取出最后一个字符串字面量作为目标路径。
- * 例：'@': resolve(rootDir, './src')  → ./src
+ * Pick the last string literal from an alias assignment expression as the target path.
+ * Example: '@': resolve(rootDir, './src')  → ./src
  */
 function pickAliasTarget(expr) {
   const strs = [...expr.matchAll(/['"`]([^'"`]+)['"`]/g)].map(m => m[1]);
   if (!strs.length) return null;
-  // 优先带 ./ 或 src 的路径段
+  // Prefer path segments that start with ./ or include src
   const preferred =
     [...strs].reverse().find(s => s.startsWith('.') || s.includes('src') || s.includes('components')) ||
     strs[strs.length - 1];
@@ -178,8 +177,8 @@ function pickAliasTarget(expr) {
 }
 
 /**
- * 从各类打包配置文本里抠 alias（不执行配置，避免插件副作用）。
- * 覆盖：alias: { '@': ..., '~': ... } 与 [{ find, replacement }]
+ * Extract aliases from bundler config text (do not eval config; avoid plugin side effects).
+ * Covers: alias: { '@': ..., '~': ... } and [{ find, replacement }]
  */
 function loadBundlerAliases(root, map) {
   for (const name of CONFIG_CANDIDATES) {
@@ -188,7 +187,7 @@ function loadBundlerAliases(root, map) {
     if (!exists(file)) continue;
     const text = readText(file);
 
-    // 取 alias: { ... } 块（括号配对，避免正则偷懒截断）
+    // Grab alias: { ... } block (brace matching; avoid lazy-regex truncation)
     const aliasIdx = text.search(/\balias\s*:\s*\{/);
     if (aliasIdx >= 0) {
       const braceStart = text.indexOf('{', aliasIdx);
@@ -252,8 +251,8 @@ function dirHasProjectConfig(dir) {
 }
 
 /**
- * 从文件所在目录向上找最近的「项目配置根」（含 vite/jsconfig/vue.config 等）。
- * 不超过 boundary（一般为 CLI 传入的工作区根）。
+ * Walk up from the file dir to the nearest project-config root (vite/jsconfig/vue.config, etc.).
+ * Do not go past boundary (usually the CLI workspace root).
  */
 export function findProjectRoot(filePath, boundary) {
   const stop = path.resolve(boundary);
@@ -264,7 +263,7 @@ export function findProjectRoot(filePath, boundary) {
     if (exists(path.join(dir, 'package.json'))) fallback = fallback || dir;
     if (dir === stop || path.dirname(dir) === dir) break;
     const parent = path.dirname(dir);
-    // 越出边界则停
+    // Stop if we would leave the boundary
     const rel = path.relative(stop, parent);
     if (rel.startsWith('..') && !path.isAbsolute(rel)) break;
     dir = parent;
@@ -278,10 +277,10 @@ function discoverAliases(root) {
   loadTsJsPaths(root, map);
   loadBundlerAliases(root, map);
 
-  // 常见默认兜底（不覆盖已解析到的）
+  // Common defaults (do not override already-resolved aliases)
   if (!map.has('@')) addAlias(map, '@', './src', root);
   if (!map.has('~')) {
-    // Vue CLI 常见 ~ 指向 src；Vite 项目常指向根。优先已有 src。
+    // Vue CLI often maps ~ to src; Vite often maps to root. Prefer existing src.
     addAlias(map, '~', exists(path.join(root, 'src')) ? './src' : './', root);
   }
   return map;
@@ -311,7 +310,7 @@ function isGitRepo(root) {
   }).status === 0;
 }
 
-/** 未提交改动 + 可选相对 base 的分支提交改动 */
+/** Uncommitted changes + optional commits vs base branch */
 function collectChangedFiles(root, { branchDiff } = {}) {
   const files = new Set();
   const absRoot = path.resolve(root);
@@ -323,7 +322,7 @@ function collectChangedFiles(root, { branchDiff } = {}) {
   const porcelain = git(absRoot, ['status', '--porcelain', '-uall']);
   for (const line of porcelain.split(/\r?\n/)) {
     if (!line.trim()) continue;
-    // XY PATH 或 XY ORIG -> PATH
+    // XY PATH or XY ORIG -> PATH
     const renamed = line.match(/^R.\s+.+?->\s+(.+)$/);
     const normal = line.match(/^..\s+(.+)$/);
     const raw = (renamed ? renamed[1] : normal ? normal[1] : '').trim().replace(/^"|"$/g, '');
@@ -337,7 +336,7 @@ function collectChangedFiles(root, { branchDiff } = {}) {
       if (line.trim()) files.add(normalizeSlashes(line.trim()));
     }
   } else {
-    // 当前分支相对上游（若有）的已提交未推送也可纳入；没有上游则跳过
+    // Include commits ahead of upstream when present; skip if no upstream
     const upstream = git(absRoot, ['rev-parse', '--abbrev-ref', '--symbolic-full-name', '@{u}']).trim();
     if (upstream) {
       const diff = git(absRoot, ['diff', '--name-only', '--diff-filter=ACMR', `${upstream}...HEAD`]);
@@ -370,13 +369,13 @@ function collectChangedFiles(root, { branchDiff } = {}) {
 }
 
 /**
- * 提取模块说明符。覆盖：
+ * Extract module specifiers. Covers:
  * import x from 'a'
  * import('a')
  * require('a')
  * export { x } from 'a'
  * export * from 'a'
- * 以及 request/axios 类：request('@/api/...') 若像路径则检查；纯 URL 跳过
+ * Plus request/axios-style: request('@/api/...') if path-like; skip plain URLs
  */
 function extractSpecifiers(content) {
   const hits = [];
@@ -386,7 +385,7 @@ function extractSpecifiers(content) {
     /\bimport\s*\(\s*['"`]([^'"`]+)['"`]\s*\)/g,
     /\brequire\s*\(\s*['"`]([^'"`]+)['"`]\s*\)/g,
     /\bexport\s+(?:\*|\{[\s\S]*?\})\s*from\s*['"`]([^'"`]+)['"`]/g,
-    // 常见封装：request('/api') 不校验；request('@/x') / request('./x') 校验
+    // Common wrappers: skip request('/api'); check request('@/x') / request('./x')
     /\b(?:request|axios|http|fetchJson|get|post)\s*\(\s*['"`]([.@~][^'"`]+)['"`]/g,
   ];
 
@@ -400,7 +399,7 @@ function extractSpecifiers(content) {
     return lines.length;
   };
 
-  // 去掉注释，降低误伤
+  // Strip comments to reduce false positives
   const stripped = content
     .replace(/\/\*[\s\S]*?\*\//g, m => ' '.repeat(m.length))
     .replace(/(^|[^:])\/\/.*$/gm, (m, p1) => p1 + ' '.repeat(m.length - p1.length));
@@ -422,9 +421,9 @@ function isPackageSpecifier(spec) {
   if (spec.startsWith('http://') || spec.startsWith('https://') || spec.startsWith('data:'))
     return true;
   if (spec.startsWith('node:')) return true;
-  // 作用域包 @scope/pkg —— 注意与路径别名 @/、@components 区分；有无别名由 resolve 侧先匹配
+  // Scoped package @scope/pkg — distinct from path aliases @/, @components; resolve matches aliases first
   if (/^@[^{/]+\/[^/]+/.test(spec) || /^@[^{/]+$/.test(spec)) return true;
-  // lodash、vue、element-plus/dist/index.css：未命中别名时当外部包跳过
+  // lodash, vue, element-plus/dist/index.css: skip as external when no alias hits
   if (!spec.startsWith('@') && !spec.startsWith('~') && !spec.includes(':') && !/^[./]/.test(spec)) {
     return true;
   }
@@ -439,7 +438,7 @@ function resolveWithAliases(spec, fromFile, aliases, root) {
     return spec;
   }
 
-  // 最长前缀匹配 alias
+  // Longest-prefix alias match
   const keys = [...aliases.keys()].sort((a, b) => b.length - a.length);
   for (const key of keys) {
     if (spec === key) return aliases.get(key);
@@ -448,10 +447,10 @@ function resolveWithAliases(spec, fromFile, aliases, root) {
     }
   }
 
-  // 未命中别名的「components/xxx」类：若像包则外部跳过
+  // Unaliased "components/xxx"-style: skip as external if package-like
   if (isPackageSpecifier(spec)) return null;
 
-  // 兜底相对项目根
+  // Fallback: relative to project root
   return path.resolve(root, spec.replace(/^\//, ''));
 }
 
@@ -469,11 +468,11 @@ function shouldSkipSpecifier(spec) {
   if (!spec) return true;
   if (spec.startsWith('virtual:') || spec.startsWith('\0')) return true;
   if (/\?/.test(spec) && !spec.startsWith('.') && !spec.startsWith('@') && !spec.startsWith('~')) {
-    // vue?vue&type=style 这类构建期虚拟模块
+    // Build-time virtual modules like vue?vue&type=style
   }
   const clean = spec.split('?')[0].split('#')[0];
   if (!clean) return true;
-  // CSS 远程
+  // Remote CSS
   if (/^https?:/.test(clean)) return true;
   return false;
 }
@@ -483,7 +482,7 @@ export function checkProject(root, options = {}) {
   if (!exists(absRoot)) {
     return {
       ok: false,
-      error: `项目目录不存在: ${absRoot}`,
+      error: `Project directory not found: ${absRoot}`,
       missing: [],
     };
   }
@@ -523,7 +522,7 @@ export function checkProject(root, options = {}) {
       if (shouldSkipSpecifier(specifier)) continue;
       const clean = specifier.split('?')[0].split('#')[0];
 
-      // 先按该文件所属项目的别名解析；未命中且像 npm 包则跳过
+      // Resolve via this file's project aliases first; skip if no hit and looks like npm
       const resolvedBase = resolveWithAliases(clean, file, aliases, projectRoot);
       if (resolvedBase == null) continue;
 
@@ -539,7 +538,7 @@ export function checkProject(root, options = {}) {
     }
   }
 
-  // 无改动文件时，仍尝试读取传入根的配置，便于 --json 查看
+  // With no changed files, still load root config so --json can show aliases
   if (!Object.keys(projectAliasReport).length) {
     projectAliasReport['.'] = aliasesToObject(discoverAliases(absRoot), absRoot);
   }
@@ -566,7 +565,7 @@ function writeFixtureTree(base, tree) {
   for (const [rel, body] of Object.entries(tree)) {
     const full = path.join(base, rel);
     fs.mkdirSync(path.dirname(full), { recursive: true });
-    if (body === null) continue; // 仅建目录占位，不建文件
+    if (body === null) continue; // Directory placeholder only; do not create a file
     fs.writeFileSync(full, body, 'utf8');
   }
 }
@@ -578,7 +577,7 @@ function runSelfTests() {
 
   const cases = [];
 
-  // 案例 1：Vite Vue3，@ 指向 src，缺文件应失败
+  // Case 1: Vite Vue3, @ -> src; missing file should fail
   {
     const root = path.join(tmp, 'vite-vue3-missing');
     writeFixtureTree(root, {
@@ -601,13 +600,13 @@ export default {
     });
     const r = checkProject(root, { files: ['src/main.js'] });
     cases.push({
-      name: 'vite-vue3 缺少 @/utils/nope.js',
+      name: 'vite-vue3 missing @/utils/nope.js',
       pass: r.ok === false && r.missing.some(m => m.specifier.includes('utils/nope')),
       detail: r,
     });
   }
 
-  // 案例 2：同上，文件齐全应通过
+  // Case 2: same setup, all files present should pass
   {
     const root = path.join(tmp, 'vite-vue3-ok');
     writeFixtureTree(root, {
@@ -620,10 +619,10 @@ export default { resolve: { alias: { '@': resolve(__dirname, './src') } } };
       'src/utils/ok.js': `export default 1;\n`,
     });
     const r = checkProject(root, { files: ['src/main.js'] });
-    cases.push({ name: 'vite-vue3 引用齐全', pass: r.ok === true, detail: r });
+    cases.push({ name: 'vite-vue3 refs complete', pass: r.ok === true, detail: r });
   }
 
-  // 案例 3：Vue2 / webpack ~ 与 @
+  // Case 3: Vue2 / webpack ~ and @
   {
     const root = path.join(tmp, 'vue2-webpack');
     writeFixtureTree(root, {
@@ -651,13 +650,13 @@ export default {};
     });
     const r = checkProject(root, { files: ['src/views/Home.vue'] });
     cases.push({
-      name: 'vue2 ~ 别名缺文件',
+      name: 'vue2 ~ alias missing file',
       pass: r.ok === false && r.missing.some(m => /Missing/.test(m.specifier)),
       detail: r,
     });
   }
 
-  // 案例 4：React + jsconfig paths
+  // Case 4: React + jsconfig paths
   {
     const root = path.join(tmp, 'react-jsconfig');
     writeFixtureTree(root, {
@@ -675,13 +674,13 @@ import ghost from '@/lib/ghost';
     });
     const r = checkProject(root, { files: ['src/App.jsx'] });
     cases.push({
-      name: 'react jsconfig 缺 @/lib/ghost',
+      name: 'react jsconfig missing @/lib/ghost',
       pass: r.ok === false && r.missing.some(m => m.specifier.includes('lib/ghost')),
       detail: r,
     });
   }
 
-  // 案例 5：Next.js 风格
+  // Case 5: Next.js style
   {
     const root = path.join(tmp, 'next-app');
     writeFixtureTree(root, {
@@ -706,10 +705,10 @@ export default function Page(){return null}
       'src/utils/request.js': `export const get = () => {};\n`,
     });
     const r = checkProject(root, { files: ['src/pages/index.jsx'] });
-    cases.push({ name: 'next 引用齐全', pass: r.ok === true, detail: r });
+    cases.push({ name: 'next refs complete', pass: r.ok === true, detail: r });
   }
 
-  // 案例 6：相对路径缺文件 + require
+  // Case 6: relative path missing + require
   {
     const root = path.join(tmp, 'relative-require');
     writeFixtureTree(root, {
@@ -721,13 +720,13 @@ import c from './c.ts';
     });
     const r = checkProject(root, { files: ['src/a.js'] });
     cases.push({
-      name: '相对路径缺 ./c.ts',
+      name: 'relative path missing ./c.ts',
       pass: r.ok === false && r.missing.some(m => m.specifier.includes('./c')),
       detail: r,
     });
   }
 
-  // 案例 7：省略扩展名 / index 解析
+  // Case 7: omitted extension / index resolve
   {
     const root = path.join(tmp, 'index-resolve');
     writeFixtureTree(root, {
@@ -736,10 +735,10 @@ import c from './c.ts';
       'src/features/hello/index.ts': `export default 'ok';\n`,
     });
     const r = checkProject(root, { files: ['src/main.ts'] });
-    cases.push({ name: '目录 index 解析通过', pass: r.ok === true, detail: r });
+    cases.push({ name: 'directory index resolve pass', pass: r.ok === true, detail: r });
   }
 
-  // 案例 8：外部包不报错
+  // Case 8: external packages should not error
   {
     const root = path.join(tmp, 'external-pkg');
     writeFixtureTree(root, {
@@ -750,10 +749,10 @@ import scope from '@vue/shared';
 `,
     });
     const r = checkProject(root, { files: ['src/main.js'] });
-    cases.push({ name: '外部 npm 包跳过', pass: r.ok === true, detail: r });
+    cases.push({ name: 'external npm packages skipped', pass: r.ok === true, detail: r });
   }
 
-  // 案例 9：request('@/api/foo') 本地路径校验
+  // Case 9: request('@/api/foo') local path check
   {
     const root = path.join(tmp, 'request-alias');
     writeFixtureTree(root, {
@@ -767,13 +766,13 @@ request('/blade-system/ok');
     });
     const r = checkProject(root, { files: ['src/page.js'] });
     cases.push({
-      name: 'request(@/...) 缺模块会报',
+      name: 'request(@/...) reports missing module',
       pass: r.ok === false && r.missing.some(m => m.specifier.includes('api/missing')),
       detail: r,
     });
   }
 
-  // 案例 10：短别名 components/
+  // Case 10: short alias components/
   {
     const root = path.join(tmp, 'short-alias');
     writeFixtureTree(root, {
@@ -798,13 +797,13 @@ import B from 'components/B.vue';
     });
     const r = checkProject(root, { files: ['src/views/x.vue'] });
     cases.push({
-      name: '短别名 components 缺 B',
+      name: 'short alias components missing B',
       pass: r.ok === false && r.missing.some(m => m.specifier.includes('components/B')),
       detail: r,
     });
   }
 
-  // 案例 11：工作区根下改子项目文件 —— 必须读到子项目 vite 配置（styles 等）
+  // Case 11: workspace-root check of subproject file — must read subproject vite config (styles, etc.)
   {
     const root = path.join(tmp, 'monorepo');
     writeFixtureTree(root, {
@@ -836,7 +835,7 @@ export default { resolve: { alias: { '@': resolve(__dirname, './src') } } };
     });
     const rOk = checkProject(root, { files: ['app-a/src/main.js'] });
     cases.push({
-      name: '工作区根读取子项目配置(styles/@)',
+      name: 'workspace root reads subproject config (styles/@)',
       pass:
         rOk.ok === true &&
         rOk.projectAliases?.['app-a']?.styles === 'src/styles' &&
@@ -845,13 +844,13 @@ export default { resolve: { alias: { '@': resolve(__dirname, './src') } } };
     });
     const rMiss = checkProject(root, { files: ['app-b/src/main.js'] });
     cases.push({
-      name: '工作区根下子项目缺文件',
+      name: 'workspace root subproject missing file',
       pass: rMiss.ok === false && rMiss.missing.some(m => m.project === 'app-b'),
       detail: rMiss,
     });
   }
 
-  // 案例 12：next.config 赋值写法 alias['@'] = ...
+  // Case 12: next.config assignment form alias['@'] = ...
   {
     const root = path.join(tmp, 'next-assign-alias');
     writeFixtureTree(root, {
@@ -871,7 +870,7 @@ export default {
     });
     const r = checkProject(root, { files: ['src/pages/index.jsx'] });
     cases.push({
-      name: 'next alias[\'@\']= 赋值解析',
+      name: 'next alias[\'@\']= assignment parse',
       pass: r.ok === true && r.aliases?.['@'] === 'src',
       detail: r,
     });
@@ -896,11 +895,11 @@ function printUsage() {
   node check-import-refs.mjs --self-test
 
 Options:
-  --branch-diff <ref>   额外对比 git diff --name-only <ref>（如 origin/dev）
-  --files a,b,c         只检查这些相对项目根的源文件（迁移场景常用）
-  --files-from <path>   从文本文件读取路径列表（一行一个）
-  --json                成功时也输出完整 JSON
-  --self-test           跑内置多框架案例
+  --branch-diff <ref>   Also compare git diff --name-only <ref> (e.g. origin/dev)
+  --files a,b,c         Check only these source files relative to project root (migration use)
+  --files-from <path>   Read path list from a text file (one per line)
+  --json                Always print full JSON on success too
+  --self-test           Run built-in multi-framework cases
 `);
 }
 
@@ -989,11 +988,11 @@ function main(argv) {
       {
         ok: false,
         missing: result.missing.map(m => ({
-          引用文件: m.file,
-          行号: m.line,
-          导入语句: m.specifier,
-          缺失路径: m.missing,
-          项目: m.project,
+          file: m.file,
+          line: m.line,
+          specifier: m.specifier,
+          missing: m.missing,
+          project: m.project,
         })),
         aliases: result.aliases,
         projectAliases: result.projectAliases,

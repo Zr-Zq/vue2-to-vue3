@@ -1,19 +1,21 @@
 #!/usr/bin/env node
 /**
- * 拷贝迁移底座（默认 1.pure-vue-app）到目标目录，供 AI 迁移工作区使用
+ * Legacy: copy the in-repo Vue2 template (default 1.pure-vue-app) to --to.
+ * Real migrations: AI builds a Vite+Vue3 base (incl. env/project config) instead.
+ * Scripts must never migrate .env* / VUE_APP_* ↔ VITE_*.
  */
 const fs = require('fs')
 const path = require('path')
 const { REPO_ROOT } = require('../src/paths')
 
 function printHelp() {
-  console.log(`Usage: v23-scaffold --to <dir> [--from <底座模板>]
+  console.log(`Usage: v23-scaffold --to <dir> [--from <baseTemplate>]
 
-拷贝纯 Vue 迁移底座到新目录（第一步）。
+Legacy template copy only. Prefer AI creating a Vite+Vue3 base at --to.
 
 Options:
-  --to <dir>     目标目录（将创建/覆盖拷贝）
-  --from <dir>   模板路径（默认仓库内 1.pure-vue-app）
+  --to <dir>     Target directory (created / overwrite-copied into)
+  --from <dir>   Template path (default: repo 1.pure-vue-app)
   -h, --help
 `)
 }
@@ -51,14 +53,14 @@ function main() {
   const from = path.resolve(args.from || path.join(REPO_ROOT, '1.pure-vue-app'))
   const to = path.resolve(args.to)
   if (!fs.existsSync(from)) {
-    console.error('底座模板不存在:', from)
+    console.error('Base template not found:', from)
     process.exit(1)
   }
   copyDir(from, to)
-  console.log('已拷贝底座:')
+  console.log('Copied base:')
   console.log('  from:', from)
   console.log('  to:  ', to)
-  console.log('下一步: 在目标目录 npm install，再用 v23-ingest 导入业务文件')
+  console.log('Next: npm install in the target, then v23-ingest to import business files')
 }
 
 main()

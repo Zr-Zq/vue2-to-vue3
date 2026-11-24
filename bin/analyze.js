@@ -7,12 +7,12 @@ const { outputPath } = require('../src/paths')
 function printHelp() {
   console.log(`Usage: v23-analyze <projectRoot> [options]
 
-前置分析，默认写入 <project>/.v23/（供流水线使用）
+Preflight analysis; writes to <project>/.v23/ by default (for the pipeline).
 
 Options:
-  --out <dir>       覆盖输出目录（默认 <project>/.v23）
-  --copy-report     额外复制到仓库 output/<项目>-analyze
-  --json-only       不写 HTML
+  --out <dir>       Override output directory (default <project>/.v23)
+  --copy-report     Also copy to repo output/<project>-analyze
+  --json-only       Skip HTML report
   -h, --help
 `)
 }
@@ -45,13 +45,13 @@ function main() {
 
   const projectRoot = path.resolve(args.projectRoot)
   if (!fs.existsSync(projectRoot)) {
-    console.error('项目目录不存在:', projectRoot)
+    console.error('Project directory not found:', projectRoot)
     process.exit(1)
   }
 
-  console.log('分析中:', projectRoot)
+  console.log('Analyzing:', projectRoot)
 
-  // 自定义 --out 时仍写到指定目录（兼容）；默认项目内 .v23
+  // Custom --out still writes to that dir (compat); default is project .v23
   if (args.out) {
     const { buildGraph } = require('../src/build-graph')
     const { renderHtmlReport } = require('../src/report-html')
@@ -64,7 +64,7 @@ function main() {
     if (!args.jsonOnly) {
       fs.writeFileSync(path.join(outDir, 'index.html'), renderHtmlReport(graph), 'utf8')
     }
-    console.log(`完成 ${Date.now() - t0}ms · 写出 ${outDir}`)
+    console.log(`Done ${Date.now() - t0}ms · wrote ${outDir}`)
     printStats(graph)
     return
   }
@@ -75,11 +75,11 @@ function main() {
     copyReport: args.copyReport,
   })
   const ms = Date.now() - t0
-  console.log(`完成 ${ms}ms · 工作目录 ${result.workDir}`)
-  console.log('写入', result.graphPath)
-  if (result.htmlPath) console.log('写入', result.htmlPath)
+  console.log(`Done ${ms}ms · work dir ${result.workDir}`)
+  console.log('Wrote', result.graphPath)
+  if (result.htmlPath) console.log('Wrote', result.htmlPath)
   if (args.copyReport) {
-    console.log('报告副本', outputPath(path.basename(projectRoot) + '-analyze'))
+    console.log('Report copy', outputPath(path.basename(projectRoot) + '-analyze'))
   }
   printStats(result.graph)
 }
@@ -100,7 +100,7 @@ function printStats(graph) {
   )
 
   if (graph.globalIndex && graph.globalIndex.length) {
-    console.log('全局登记摘要（最多 20）:')
+    console.log('Global registration summary (max 20):')
     graph.globalIndex.slice(0, 20).forEach((g) => {
       const files = g.registrations.map((r) => r.file).join(', ')
       console.log(`  - ${g.api}  ×${g.registrations.length}  @ ${files}`)
@@ -108,7 +108,7 @@ function printStats(graph) {
   }
 
   if (graph.mixins && graph.mixins.applications && graph.mixins.applications.length) {
-    console.log('Mixin 应用摘要（最多 15）:')
+    console.log('Mixin application summary (max 15):')
     graph.mixins.applications.slice(0, 15).forEach((a) => {
       console.log(
         `  - [${a.scope}] ${a.file} → ${a.mixinFile || a.mixinSource || a.localName || '(inline)'}${a.factory ? ' (factory)' : ''}`
@@ -116,7 +116,7 @@ function printStats(graph) {
     })
   }
 
-  console.log('提示: 全流程请用 npm run run:demo / v23-run（结束后自动清理 .v23）')
+  console.log('Tip: use npm run run:demo / v23-run for the full flow (auto-cleans .v23 when done)')
 }
 
 main()

@@ -2,7 +2,7 @@ const { createPlugin } = require('../create-plugin')
 
 module.exports = createPlugin({
   name: 'less',
-  description: 'Less / lang="less" 处理（可插拔）',
+  description: 'Less / lang="less" handling (pluggable)',
   version: '0.1.0',
   defaults: { mode: 'detect' },
   match(ctx) {
@@ -20,7 +20,7 @@ module.exports = createPlugin({
     ctx.report({
       level: 'info',
       plugin: 'less',
-      message: hits.length ? 'Less: ' + hits.join(', ') : 'Less 相关文件',
+      message: hits.length ? 'Less: ' + hits.join(', ') : 'Less related files',
     })
 
     if (api.options.mode === 'annotate' && !ctx.file.content.includes('/* v23:plugin=less */')) {
