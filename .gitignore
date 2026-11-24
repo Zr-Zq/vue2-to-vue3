@@ -155,3 +155,8 @@ vite.config.ts.timestamp-*
 .nx/cache
 .nx/workspace-data
 .nx/migrate-runs
+
+# 本地夹具调试脚本（不上库）
+scripts/restore-my-vue-app-from-transcript.js
+scripts/gen-hard-real-fixtures.js
+
