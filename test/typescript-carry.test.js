@@ -11,7 +11,7 @@ function ok(cond, msg) {
   console.log('  ok:', msg)
 }
 
-console.log('== data() return type → ref<T> (carry only) ==')
+console.log('== data() return type to ref<T> (carry only) ==')
 {
   const r = migrateOptionsToComposition(
     `export default {

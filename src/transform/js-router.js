@@ -1,21 +1,21 @@
 /**
- * Vue Router 3 → 4 (deterministic subset).
+ * Vue Router 3 to 4 (deterministic subset).
  *
  * Router module (plain .js/.ts):
- * - import VueRouter from 'vue-router' → named createRouter / createWeb*History imports
+ * - import VueRouter from 'vue-router' to named createRouter / createWeb*History imports
  * - Vue.use(VueRouter) removed; unused `import Vue from 'vue'` dropped
- * - new VueRouter({ mode, base, fallback, … }) → createRouter({ history: createWeb*History(base), … })
- * - path: '*' → '/:pathMatch(.*)*' (relative ':pathMatch(.*)*' inside literal children arrays);
- *   '/foo/*' → '/foo/:pathMatch(.*)*'
- * - scrollBehavior return objects { x, y, selector } → { left, top, el }
- * - router.addRoutes(list) → list.forEach((r) => router.addRoute(r))
- * - router.onReady(ok, err) → router.isReady().then(ok, err)
+ * - new VueRouter({ mode, base, fallback, … }) to createRouter({ history: createWeb*History(base), … })
+ * - path: '*' to '/:pathMatch(.*)*' (relative ':pathMatch(.*)*' inside literal children arrays);
+ *   '/foo/*' to '/foo/:pathMatch(.*)*'
+ * - scrollBehavior return objects { x, y, selector } to { left, top, el }
+ * - router.addRoutes(list) to list.forEach((r) => router.addRoute(r))
+ * - router.onReady(ok, err) to router.isReady().then(ok, err)
  * - VueRouter.prototype.push/replace duplicate-navigation patches removed (v4 resolves failures)
- * - VueRouter.isNavigationFailure / NavigationFailureType → named imports
- * - <router>.currentRoute.x → <router>.currentRoute.value.x (v4 currentRoute is a Ref)
+ * - VueRouter.isNavigationFailure / NavigationFailureType to named imports
+ * - <router>.currentRoute.x to <router>.currentRoute.value.x (v4 currentRoute is a Ref)
  *
  * <script setup> blocks:
- * - this.$route / this.$router → route / router from useRoute() / useRouter()
+ * - this.$route / this.$router to route / router from useRoute() / useRouter()
  *
  * Out of scope (AI-TODO): router.match / getMatchedComponents, non-literal router options.
  * Options API components keep this.$route / this.$router (still valid in Vue3).
@@ -100,7 +100,7 @@ function historyCall(fnName, baseExpr) {
   return t.callExpression(t.identifier(fnName), baseExpr ? [t.cloneNode(baseExpr, true)] : [])
 }
 
-/** mode expr (non-literal) → mode === 'history' ? … : mode === 'abstract' ? … : hash */
+/** mode expr (non-literal) to mode === 'history' ? … : mode === 'abstract' ? … : hash */
 function historyFromDynamicMode(modeExpr, baseExpr, needed) {
   needed.add('createWebHistory')
   needed.add('createMemoryHistory')
@@ -133,9 +133,44 @@ function rewriteScrollBehavior(fnNode, changes) {
           if (prop.shorthand) prop.shorthand = false
         }
       })
-      changes.push({ kind: 'router-scroll-position', note: '{ x, y, selector } → { left, top, el }' })
+      changes.push({ kind: 'router-scroll-position', note: '{ x, y, selector } to { left, top, el }' })
     },
   })
+}
+
+/**
+ * After scrollBehavior field rename, update common fixture/assert patterns in the same module:
+ * - 'xy-shape' → 'lte-shape'
+ * - sample.x|y|selector → left|top|el (identifier hosts matching /sample|scroll|pos/i)
+ */
+function rewriteScrollAssertHelpers(ast, changes, aiNotes) {
+  if (!changes.some((c) => c.kind === 'router-scroll-position')) return
+  let touched = false
+  traverse(ast, {
+    StringLiteral(p) {
+      if (p.node.value !== 'xy-shape') return
+      p.node.value = 'lte-shape'
+      touched = true
+    },
+    MemberExpression(p) {
+      if (p.node.computed || !t.isIdentifier(p.node.property) || !t.isIdentifier(p.node.object)) return
+      if (!SCROLL_RENAME[p.node.property.name]) return
+      const host = p.node.object.name
+      if (!/sample|scroll|pos|position|sbResult/i.test(host)) return
+      p.node.property = t.identifier(SCROLL_RENAME[p.node.property.name])
+      touched = true
+    },
+  })
+  if (touched) {
+    changes.push({
+      kind: 'router-scroll-assert',
+      note: "xy-shape / sample.x|y|selector → lte-shape / left|top|el",
+    })
+  } else {
+    aiNotes.push(
+      'scrollBehavior now uses left/top/el — update any assertions that still check x/y/selector or expect xy-shape'
+    )
+  }
 }
 
 function convertRouterOptions(optsNode, needed, changes) {
@@ -246,7 +281,7 @@ function migrateRouterModule(code, filename) {
         p.parentPath.isExpressionStatement()
       ) {
         p.parentPath.remove()
-        changes.push({ kind: 'router-vue-use-removed', note: 'Vue.use(VueRouter) → app.use(router) in entry' })
+        changes.push({ kind: 'router-vue-use-removed', note: 'Vue.use(VueRouter) to app.use(router) in entry' })
         return
       }
       if (!t.isMemberExpression(callee) || callee.computed || !t.isIdentifier(callee.property)) return
@@ -262,7 +297,7 @@ function migrateRouterModule(code, filename) {
             ),
           ])
         )
-        changes.push({ kind: 'router-addRoutes', note: 'addRoutes(list) → list.forEach(addRoute)' })
+        changes.push({ kind: 'router-addRoutes', note: 'addRoutes(list) to list.forEach(addRoute)' })
         return
       }
       if (method === 'onReady' && p.node.arguments.length >= 1 && p.node.arguments.length <= 2) {
@@ -275,7 +310,7 @@ function migrateRouterModule(code, filename) {
             p.node.arguments
           )
         )
-        changes.push({ kind: 'router-onReady', note: 'onReady(cb) → isReady().then(cb)' })
+        changes.push({ kind: 'router-onReady', note: 'onReady(cb) to isReady().then(cb)' })
         return
       }
       if (method === 'getMatchedComponents' || (method === 'match' && routerBindings.has(calleeRootName(callee)))) {
@@ -287,7 +322,7 @@ function migrateRouterModule(code, filename) {
       needed.add('createRouter')
       const opts = p.node.arguments[0] || t.objectExpression([])
       const conv = convertRouterOptions(opts, needed, changes)
-      if (conv.ai) aiNotes.push('new VueRouter(options) with non-literal options — map mode/base → history manually')
+      if (conv.ai) aiNotes.push('new VueRouter(options) with non-literal options — map mode/base to history manually')
       p.replaceWith(t.callExpression(t.identifier('createRouter'), [conv.node]))
       const decl = p.parentPath
       if (decl && decl.isVariableDeclarator() && t.isIdentifier(decl.node.id)) routerBindings.add(decl.node.id.name)
@@ -374,6 +409,7 @@ function migrateRouterModule(code, filename) {
   }
   ensureNamedImports(ast, 'vue-router', [...needed])
   dropUnusedVueDefault(ast, changes)
+  rewriteScrollAssertHelpers(ast, changes, aiNotes)
 
   let out = gen(ast, code)
   if (aiNotes.length) {
@@ -428,12 +464,13 @@ function uniqueId(ast, base) {
 }
 
 /**
- * <script setup> block: this.$route / this.$router → useRoute() / useRouter().
+ * <script setup> block: this.$route / this.$router to useRoute() / useRouter().
  * @returns {{ code: string, changes: object[] }}
  */
 function migrateRouterScriptSetup(code, filename) {
   const changes = []
-  if (!/this\.\$route/.test(code)) return { code, changes }
+  // Match either instance API — early `$route`-only gate dropped `$router`-only files (G010).
+  if (!/this\.\$route\b/.test(code) && !/this\.\$router\b/.test(code)) return { code, changes }
   let ast
   try {
     ast = parse(code, filename)
@@ -464,7 +501,7 @@ function migrateRouterScriptSetup(code, filename) {
     },
   })
 
-  // this.$router.currentRoute → router.currentRoute.value
+  // this.$router.currentRoute to router.currentRoute.value
   if (ids.$router) {
     traverse(ast, {
       MemberExpression(p) {

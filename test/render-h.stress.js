@@ -153,7 +153,7 @@ function main() {
     try {
       runCase(c, c.id)
       const idemp = idempotentRounds(c.src, c.id, c.sfc, 3)
-      console.log('  ok', c.id, 'idempotent', idemp.perRound.join('→'))
+      console.log('  ok', c.id, 'idempotent', idemp.perRound.join('to'))
       passed += 1
     } catch (e) {
       failed += 1
@@ -185,7 +185,7 @@ function main() {
       const codeOnly = stripCommentsAndStrings(r1.content)
       assert.ok(!/this\.\$scopedSlots\b/.test(codeOnly), rel + ' still $scopedSlots')
       const idemp = idempotentRounds(raw, abs, /\.vue$/i.test(abs), 3)
-      console.log('  ok', rel, 'changes1=' + (r1.changes || []).length, 'idem', idemp.perRound.join('→'))
+      console.log('  ok', rel, 'changes1=' + (r1.changes || []).length, 'idem', idemp.perRound.join('to'))
       passed += 1
     } catch (e) {
       failed += 1
@@ -203,7 +203,7 @@ function main() {
       if (i % 20 === 0 || i === args.synth - 1) {
         const idemp = idempotentRounds(c.src, c.id, false, 2)
         process.stdout.write(
-          '  synth ' + (i + 1) + '/' + args.synth + ' idem ' + idemp.perRound.join('→') + '\n'
+          '  synth ' + (i + 1) + '/' + args.synth + ' idem ' + idemp.perRound.join('to') + '\n'
         )
       }
       passed += 1

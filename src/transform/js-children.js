@@ -1,5 +1,5 @@
 /**
- * this.$children → __v23Children(this)
+ * this.$children to __v23Children(this)
  * Inject Vue3 approximate implementation (collect child proxies via subTree).
  * No perfect equivalent API; script can rewrite, but call-site semantics need regression.
  */

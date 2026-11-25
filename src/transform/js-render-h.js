@@ -1,8 +1,8 @@
 /**
- * render(h) → Vue3:
+ * render(h) to Vue3:
  * - Remove render h parameter
  * - Add import { h } from 'vue'
- * - this.$scopedSlots → this.$slots
+ * - this.$scopedSlots to this.$slots
  *
  * Also: flatten attrs/on/domProps in h() 2nd arg when possible (common subset)
  */
@@ -80,7 +80,7 @@ function stripHParam(fnNode) {
 
 /**
  * Flatten h 2nd arg: { attrs, on, domProps, props, class, style, key, ref, ... }
- * → Vue3 flat object (common subset; keep complex nesting)
+ * to Vue3 flat object (common subset; keep complex nesting)
  */
 function flattenHDataObject(objExpr) {
   if (!t.isObjectExpression(objExpr)) return null
@@ -200,7 +200,7 @@ function migrateRenderH(code, filename) {
     // export default { render(h) {} } already covered by ObjectMethod
     // function render(h) at top-level rare
     MemberExpression(p) {
-      // this.$scopedSlots → this.$slots
+      // this.$scopedSlots to this.$slots
       if (
         t.isThisExpression(p.node.object) &&
         t.isIdentifier(p.node.property, { name: '$scopedSlots' }) &&

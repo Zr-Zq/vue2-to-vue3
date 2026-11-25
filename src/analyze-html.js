@@ -1,7 +1,7 @@
 /**
  * Vue SFC HTML (template) handling:
  * - Scan tags / attrs / interpolations by line
- * - Emit structured elements and Vue2→3 findings
+ * - Emit structured elements and Vue2to3 findings
  * No JS/Babel; external/empty scripts are not handled here.
  */
 const { decomposeVue } = require('./sfc-parts')
@@ -35,7 +35,7 @@ function offsetToLoc(code, offset) {
 function addLoc(base, relative) {
   if (!base) return relative
   if (!relative) return { line: base.startLine || base.line || 1, column: relative?.column || 0 }
-  // Relative line inside template → absolute file line
+  // Relative line inside template to absolute file line
   const startLine = base.startLine || base.line || 1
   if (relative.line === 1) {
     // First line: column would also need template start column (approx: use line only)
@@ -214,7 +214,7 @@ function collectHtmlFindings(scan, meta) {
     const map = el.attrsMap
     const names = Object.keys(map)
 
-    // v-for + v-if on same node → AI must decide Vue3 shape (:key on <template>, etc.)
+    // v-for + v-if on same node to AI must decide Vue3 shape (:key on <template>, etc.)
     // Different nodes: no action (not reported).
     if (map['v-for'] != null && map['v-if'] != null) {
       const a = el.attrs.find((x) => x.name === 'v-for') || el.attrs[0]

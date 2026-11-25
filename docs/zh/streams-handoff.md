@@ -2,8 +2,8 @@
 
 ## 原则
 
-- **HTML 流**：只改 `<template>` / `<style>`（如 `.sync`、slot、`|filter`→调用、`:deep()`）。
-- **JS 流**：只改 `<script>` / 选项对象（如 `filters→methods`、`render(h)`、生命周期）。
+- **HTML 流**：只改 `<template>` / `<style>`（如 `.sync`、slot、`|filter`to调用、`:deep()`）。
+- **JS 流**：只改 `<script>` / 选项对象（如 `filterstomethods`、`render(h)`、生命周期）。
 - 两边有依赖时，**不互相硬耦合**：HTML 写交接，JS 消费；JS 找不到就 **skip**。
 
 ## 交接文件
@@ -40,8 +40,8 @@ JS 流 `migrate-filters`：
 |----|------|
 | `'html-only'` | 仅 HTML 流 + 少量风险汇总 |
 | `'js-only'` | 仅 JS 流（读 handoff） |
-| `'full'` / 数组 | 完整 HTML→JS→风险 |
-| 自定义数组 | 例如仅风险（HTML quirks + JS 风险 + `risk-options-composition` + 标注），`2.pure-vue-app` 在 Options→Composition 改写前使用 |
+| `'full'` / 数组 | 完整 HTMLtoJSto风险 |
+| 自定义数组 | 例如仅风险（HTML quirks + JS 风险 + `risk-options-composition` + 标注），`2.pure-vue-app` 在 OptionstoComposition 改写前使用 |
 
 示例：
 

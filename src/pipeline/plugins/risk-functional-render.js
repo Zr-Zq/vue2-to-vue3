@@ -23,7 +23,7 @@ module.exports = createPlugin({
           level: 'info',
           auto: 'yes',
           file: ctx.file.path,
-          message: 'options.functional = true (script → normal component)',
+          message: 'options.functional = true (script to normal component)',
           hint: 'Handled deterministically by migrate-functional',
         })
       }

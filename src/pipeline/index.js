@@ -20,7 +20,7 @@ function createDefaultRegistry() {
 }
 
 /**
- * Main entry: load config → read/write project .v23 analysis → run pipeline in order.
+ * Main entry: load config to read/write project .v23 analysis to run pipeline in order.
  */
 async function run(projectRoot, options) {
   const opts = options || {}

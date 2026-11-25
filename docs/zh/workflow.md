@@ -15,8 +15,8 @@
 1. analyze     脚本：分析源项目（图 / 风险线索）
 2. scaffold    **AI**：建好 **Vue3** 底座（**Vite**；配置齐全 + 依赖装齐 + **能启动** + **与脚本无缝衔接**；见 ./ai-scaffold-notes.md）
                · 禁止用脚本 `--scaffold` 当正式底座；**脚本不改 `.env*` / VUE_APP↔VITE**
-3. copy        脚本：from/src → to/src；并拷根级旁路目录（script/test/style/mock…）
-               · 目标已有同名文件 → 先备份到 to/.v23/backup/<时间戳>/ 再覆盖
+3. copy        脚本：from/src to to/src；并拷根级旁路目录（script/test/style/mock…）
+               · 目标已有同名文件 to 先备份到 to/.v23/backup/<时间戳>/ 再覆盖
                · 按底座 alias 改写 import（工程配置与 env 已由 AI 准备）
 4. pipeline    脚本：确定性语法迁移（sync/native/slot/render/mount/…）
                · 不能稳改的打 AI-TODO；**不迁移环境变量/工程配置**

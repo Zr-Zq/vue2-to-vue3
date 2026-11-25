@@ -8,7 +8,7 @@ const { applySfcTransforms } = require('../../transform/apply-sfc')
  */
 module.exports = createPlugin({
   name: 'migrate-render-h',
-  description: 'Rewrite render(h) → h import + drop arg / $scopedSlots',
+  description: 'Rewrite render(h) to h import + drop arg / $scopedSlots',
   version: '0.1.0',
   defaults: { enabled: true },
   match(ctx, api) {

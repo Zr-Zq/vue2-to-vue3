@@ -25,7 +25,7 @@ module.exports = createPlugin({
 
     const keepLoc = ((analysis.findings || []).find((f) => f.id === 'html.keep-alive') || {}).loc
 
-    // keep-alive + :is: scripts add :key → treated as auto, not a risk
+    // keep-alive + :is: scripts add :key to treated as auto, not a risk
     if (hasKeep && hasIs) {
       pushRisk(api.project, {
         id: 'keepalive.is',

@@ -5,11 +5,11 @@
 Vue SFC 拆成 **HTML + JS** 后，本模块只处理 **`<template>` 内的 HTML**：
 
 - 扫描标签 / 属性 / `{{ }}` 插值（带行号）
-- 产出 Vue2→Vue3 相关 findings
+- 产出 Vue2toVue3 相关 findings
 - **不改业务逻辑**；风险插件据此写入 `AI-TODO`（HTML 注释）
 
 脚本入口：`2to3/src/analyze-html.js`  
-拆解入口：`2to3/src/sfc-parts.js`（`template` → `kind: 'html'`）
+拆解入口：`2to3/src/sfc-parts.js`（`template` to `kind: 'html'`）
 
 ---
 
@@ -73,6 +73,6 @@ const r2 = analyzeHtmlTemplate(templateCode, { file, range, templateAttrs })
 |------|------|
 | `.v23/risks.json` | 全量风险（含 `part: "html"`） |
 | `.v23/html-risks.json` | 仅 HTML 风险 + 每文件 summary |
-| `graph.json` → `files[].html` | 分析阶段挂上的 html 摘要 |
+| `graph.json` to `files[].html` | 分析阶段挂上的 html 摘要 |
 
 AI 处理：按 `file:line` 打开，改 template；注释为 `<!-- 迁移脚本注释: AI-TODO … -->`。

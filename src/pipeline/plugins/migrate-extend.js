@@ -249,7 +249,7 @@ function applyExtendCallRewrite(project) {
       who: 'script',
       kind: 'rewrite',
       file: rel,
-      detail: 'Rewrote new ExtendCtor() → __v23New ×' + result.changes.length,
+      detail: 'Rewrote new ExtendCtor() to __v23New ×' + result.changes.length,
     })
   })
   if (fileCount) ensureExtendFile(project)
@@ -266,7 +266,7 @@ function applyExtendCallRewrite(project) {
 
 module.exports = createPlugin({
   name: 'migrate-extend',
-  description: 'Vue.extend / Sub.extend → __v23Extend; new Ctor() → __v23New',
+  description: 'Vue.extend / Sub.extend to __v23Extend; new Ctor() to __v23New',
   version: '0.3.0',
   defaults: { enabled: true },
   match(ctx, api) {

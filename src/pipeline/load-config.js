@@ -37,7 +37,7 @@ const RISK_STREAM = [
   { name: 'risk-summary' },
 ]
 
-/** Full preflight: HTML → JS → risk */
+/** Full preflight: HTML to JS to risk */
 const DEFAULT_PREFLIGHT_PIPELINE = [].concat(HTML_STREAM, JS_STREAM, RISK_STREAM)
 
 /** HTML-only preview stream (filter handoff left for a later JS stream) */

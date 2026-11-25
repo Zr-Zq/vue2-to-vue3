@@ -18,8 +18,8 @@ function ok(cond, msg) {
 console.log('== lifecycle ==')
 {
   const r = migrateApiCompat('export default { beforeDestroy() {}, destroyed() {} }')
-  ok(/beforeUnmount/.test(r.code), 'beforeDestroy → beforeUnmount')
-  ok(/unmounted/.test(r.code), 'destroyed → unmounted')
+  ok(/beforeUnmount/.test(r.code), 'beforeDestroy to beforeUnmount')
+  ok(/unmounted/.test(r.code), 'destroyed to unmounted')
   ok(!/beforeDestroy|\bdestroyed\b/.test(r.code), 'old hooks gone')
 }
 
@@ -28,8 +28,8 @@ console.log('== $set / $delete ==')
   const r = migrateApiCompat(
     "export default { methods: { a() { this.$set(this.bag, 'x', 1); this.$delete(this.bag, 'y'); Vue.set(this.arr, 0, 'A'); Vue.delete(this.arr, 1) } } }"
   )
-  ok(/this\.bag\.x\s*=\s*1/.test(r.code) || /this\.bag\["x"\]\s*=\s*1/.test(r.code), '$set → assign')
-  ok(/delete\s+this\.bag\.y/.test(r.code) || /delete\s+this\.bag\["y"\]/.test(r.code), '$delete → delete')
+  ok(/this\.bag\.x\s*=\s*1/.test(r.code) || /this\.bag\["x"\]\s*=\s*1/.test(r.code), '$set to assign')
+  ok(/delete\s+this\.bag\.y/.test(r.code) || /delete\s+this\.bag\["y"\]/.test(r.code), '$delete to delete')
   ok(/this\.arr\[0\]\s*=\s*'A'/.test(r.code) || /this\.arr\[0\]\s*=\s*"A"/.test(r.code), 'Vue.set index')
   ok(!/\$set|\$delete|Vue\.set|Vue\.delete/.test(r.code), 'no set/delete APIs')
 }
@@ -39,7 +39,7 @@ console.log('== $listeners / productionTip ==')
   const r = migrateApiCompat(
     "export default { computed: { x() { return this.$listeners } }, created() { Vue.config.productionTip = false } }"
   )
-  ok(/this\.\$attrs/.test(r.code), '$listeners → $attrs')
+  ok(/this\.\$attrs/.test(r.code), '$listeners to $attrs')
   ok(!/productionTip\s*=/.test(r.code), 'productionTip assignment removed')
 }
 
@@ -48,11 +48,11 @@ console.log('== directive hooks ==')
   const r = migrateDirectiveHooks(
     "export default { directives: { focus: { bind() {}, inserted() {}, update() {}, componentUpdated() {}, unbind() {} } } }"
   )
-  ok(/beforeMount/.test(r.code), 'bind → beforeMount')
-  ok(/mounted/.test(r.code), 'inserted → mounted')
-  ok(/beforeUpdate/.test(r.code), 'update → beforeUpdate')
-  ok(/\bupdated\b/.test(r.code), 'componentUpdated → updated')
-  ok(/unmounted/.test(r.code), 'unbind → unmounted')
+  ok(/beforeMount/.test(r.code), 'bind to beforeMount')
+  ok(/mounted/.test(r.code), 'inserted to mounted')
+  ok(/beforeUpdate/.test(r.code), 'update to beforeUpdate')
+  ok(/\bupdated\b/.test(r.code), 'componentUpdated to updated')
+  ok(/unmounted/.test(r.code), 'unbind to unmounted')
 }
 
 console.log('== filters pipe ==')
@@ -64,10 +64,10 @@ console.log('== filters pipe ==')
   )
   ok(/\{\{\s*upper\(raw\)\s*\}\}/.test(h.code), 'mustache')
   ok(/:title="upper\(t\)"/.test(h.code), 'bind filter')
-  ok(/v-bind="\$attrs"/.test(h.code), 'v-on listeners → v-bind attrs')
+  ok(/v-bind="\$attrs"/.test(h.code), 'v-on listeners to v-bind attrs')
 }
 
-console.log('== filters option → methods ==')
+console.log('== filters option to methods ==')
 {
   const r = migrateFiltersOption(
     "export default { filters: { upper(v) { return v } }, methods: { foo() {} } }"
@@ -90,12 +90,12 @@ console.log('== css deep ==')
       '.i :deep(.j) { }',
     ].join('\n')
   )
-  ok(/\.a :deep\(\.b\)/.test(r.code), '>>> → :deep()')
-  ok(/\.c :deep\(\.d\)/.test(r.code), '/deep/ → :deep()')
-  ok(/\.e :deep\(\.f\)/.test(r.code), '::v-deep space → :deep()')
-  ok(/\.e2 :deep\(\.f2\)/.test(r.code), '::v-deep.sel → :deep()')
-  ok(/\.g :deep\(\.h\)/.test(r.code), '::v-deep() → :deep()')
-  ok(/\.g2 :deep\(\.h2\)/.test(r.code), '::deep() → :deep()')
+  ok(/\.a :deep\(\.b\)/.test(r.code), '>>> to :deep()')
+  ok(/\.c :deep\(\.d\)/.test(r.code), '/deep/ to :deep()')
+  ok(/\.e :deep\(\.f\)/.test(r.code), '::v-deep space to :deep()')
+  ok(/\.e2 :deep\(\.f2\)/.test(r.code), '::v-deep.sel to :deep()')
+  ok(/\.g :deep\(\.h\)/.test(r.code), '::v-deep() to :deep()')
+  ok(/\.g2 :deep\(\.h2\)/.test(r.code), '::deep() to :deep()')
   ok(/\.i :deep\(\.j\)/.test(r.code), ':deep() kept')
   ok(!/::v-deep|\/deep\/|>>>|::deep\(/.test(r.code), 'no legacy deep left')
 }

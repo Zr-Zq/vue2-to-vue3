@@ -4,8 +4,8 @@ const { applySfcTransforms } = require('../../transform/apply-sfc')
 const { addFiltersHandoff, flushHandoff } = require('../../handoff')
 
 /**
- * HTML stream: rewrite template only (sync / native / slot / v-for+v-if / keep-alive / |filter→call).
- * filters→methods belongs to the JS stream; here only write .v23/handoff.json items.
+ * HTML stream: rewrite template only (sync / native / slot / v-for+v-if / keep-alive / |filtertocall).
+ * filterstomethods belongs to the JS stream; here only write .v23/handoff.json items.
  */
 module.exports = createPlugin({
   name: 'migrate-html',
@@ -35,7 +35,7 @@ module.exports = createPlugin({
       ctx.report({
         level: 'info',
         plugin: 'migrate-html',
-        message: 'handoff filters→methods: ' + filterNames.join(', '),
+        message: 'handoff filterstomethods: ' + filterNames.join(', '),
       })
     }
   },

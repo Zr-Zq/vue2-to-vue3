@@ -12,23 +12,23 @@ AI がコメントを逐項処理します。スクリプト側はセマンテ�
 
 **すでにスクリプトで確定処理でき、危険扱いしないもの（本一覧に含めず、AI-TODO も付けない）：**
 
-- `.sync` → `v-model:`、`.native` 削除、旧 slot → `v-slot`
-- `keep-alive` + `:is` → `:key` を補完
-- インスタンス `$on` / `$off` / `$once` → `this.$bus.*` + `src/compat/v23-bus.js` をコピー/登録
-- `render(h)` → h 引数削除 / data 平坦化 / `$scopedSlots→$slots`
-- `Vue.extend` / `Sub.extend` → `new` できる `__v23Extend`（`src/compat/v23-extend.js`）：関数のままなので動的な `new variable()` と `typeof Ctor === 'function'` は維持される。直接または別名の呼び出し（`new SomeExtend()` / `const Ctor = SomeExtend; new Ctor()`、同一ファイルまたは import）→ `__v23New(Ctor, extra)`。`$mount` → `createApp().mount`
-- Options→**`<script setup>`**（`defineComponent` なし）：`data`→`ref`、`computed`（get/set）、`watch`、`provide`/`inject`、`filters`→methods、ライフサイクル→`onXxx`（`beforeCreate` + `created` を順に直書き）、`defineProps`/`defineEmits`/`defineOptions`、directives→`vName`、公式 `$`、mixin 平坦化、bind/call と `this._*` 分析；`migrate-options-composition`。**`options.model`→AI**
-- **非同期ファクトリ** → `defineAsyncComponent`（`() => import()`、`loading`/`error`/`delay` オブジェクト、`Vue.component('X', () => import())`）；`migrate-async-component`。Options→setup 時はローカル `components`（非同期含む）を `defineOptions.components` へインライン
-- **TS は既存型のみ搬送**（発明しない）：`data(): { x: T }` → `ref<T>`；既存 `PropType` / メソッド注釈は `defineProps` / 関数に残す
-- **options-composition の担当外**（`this.$…` は専用プラグインへ）：`$router`/`$route` → `router`；`$store` / `map*` → `vuex`；`$i18n`/`$t`/`$tc`/… → `i18n`
-- ライフサイクル `beforeDestroy`/`destroyed` → `beforeUnmount`/`unmounted`
-- `this.$set`/`Vue.set` → 代入；`$delete`/`Vue.delete` → `delete`
-- `$listeners` → `$attrs`；テンプレート `v-on="$listeners"` → `v-bind="$attrs"`
-- カスタムディレクティブのフック名マッピング（`bind`→`beforeMount` など）
-- テンプレートの `|` フィルタ → 関数呼び出し（HTML ストリーム）；`filters`→`methods`（JS ストリーム、`.v23/handoff.json` 経由。見つからなければ skip）
-- `>>>` `/deep/` `::v-deep` → `:deep()`
+- `.sync` to `v-model:`、`.native` 削除、旧 slot to `v-slot`
+- `keep-alive` + `:is` to `:key` を補完
+- インスタンス `$on` / `$off` / `$once` to `this.$bus.*` + `src/compat/v23-bus.js` をコピー/登録
+- `render(h)` to h 引数削除 / data 平坦化 / `$scopedSlotsto$slots`
+- `Vue.extend` / `Sub.extend` to `new` できる `__v23Extend`（`src/compat/v23-extend.js`）：関数のままなので動的な `new variable()` と `typeof Ctor === 'function'` は維持される。直接または別名の呼び出し（`new SomeExtend()` / `const Ctor = SomeExtend; new Ctor()`、同一ファイルまたは import）to `__v23New(Ctor, extra)`。`$mount` to `createApp().mount`
+- Optionsto**`<script setup>`**（`defineComponent` なし）：`data`to`ref`、`computed`（get/set）、`watch`、`provide`/`inject`、`filters`tomethods、ライフサイクルto`onXxx`（`beforeCreate` + `created` を順に直書き）、`defineProps`/`defineEmits`/`defineOptions`、directivesto`vName`、公式 `$`、mixin 平坦化、bind/call と `this._*` 分析；`migrate-options-composition`。**`options.model`toAI**
+- **非同期ファクトリ** to `defineAsyncComponent`（`() => import()`、`loading`/`error`/`delay` オブジェクト、`Vue.component('X', () => import())`）；`migrate-async-component`。Optionstosetup 時はローカル `components`（非同期含む）を `defineOptions.components` へインライン
+- **TS は既存型のみ搬送**（発明しない）：`data(): { x: T }` to `ref<T>`；既存 `PropType` / メソッド注釈は `defineProps` / 関数に残す
+- **options-composition の担当外**（`this.$…` は専用プラグインへ）：`$router`/`$route` to `router`；`$store` / `map*` to `vuex`；`$i18n`/`$t`/`$tc`/… to `i18n`
+- ライフサイクル `beforeDestroy`/`destroyed` to `beforeUnmount`/`unmounted`
+- `this.$set`/`Vue.set` to 代入；`$delete`/`Vue.delete` to `delete`
+- `$listeners` to `$attrs`；テンプレート `v-on="$listeners"` to `v-bind="$attrs"`
+- カスタムディレクティブのフック名マッピング（`bind`to`beforeMount` など）
+- テンプレートの `|` フィルタ to 関数呼び出し（HTML ストリーム）；`filters`to`methods`（JS ストリーム、`.v23/handoff.json` 経由。見つからなければ skip）
+- `>>>` `/deep/` `::v-deep` to `:deep()`
 - `Vue.config.productionTip` / `silent` 代入の削除
-- `<template functional>` / `functional: true` → 通常コンポーネント（`$props`/`$attrs`、`listeners` 削除）
+- `<template functional>` / `functional: true` to 通常コンポーネント（`$props`/`$attrs`、`listeners` 削除）
 
 ---
 
@@ -66,15 +66,15 @@ AI がコメントを逐項処理します。スクリプト側はセマンテ�
    混用継続か全面 Composition かはアーキテクチャ選択。
 
 7. **`provide` のプリミティブ** (`provide-primitive`)  
-   Options→Composition 時にスクリプトが `ref` で包み、inject 側向け AI-TODO を入れる（auto=`partial`）。  
+   OptionstoComposition 時にスクリプトが `ref` で包み、inject 側向け AI-TODO を入れる（auto=`partial`）。  
    **範囲：** `provide` / `provide()` 戻りオブジェクトの字面 string/number/boolean/null。  
    **AI：** 生プリミティブとして読んでいた inject は Ref（`.value`）へ、または設計見直し。
 
-8. **Options → Composition の残り** (`options-to-composition`)  
+8. **Options to Composition の残り** (`options-to-composition`)  
    **Options API のまま保持（変換しない）：** **import の** mixin または **`options.extends`** を持つコンポーネント — 1 ファイル内で平坦化できず、Vue3 も `mixins`/`extends` をサポートするため、AI-TODO `kept Options API (…)` のみ付与し、AI が書き換えるべき Vue2 専用インスタンス API（`$createElement`、`$vnode`、`$destroy`、`$children`、`_uid` …）を列挙。  
-   なお AI（ラップアップ）：**`options.model`**、上記の Options 保持コンポーネント（Options のままか composable 化）、**`$children`**（Vue3 削除 → template ref）、子の **`$destroy`**、**`this.$options.methods`/`computed`/…**（script setup では空 → ローカル束縛を使う）、素の `.js`/`.ts` Options。ラップアップ後は **AI-TODO 表記を削除**。  
-   **確定パス済み：** `this.$el` / 裸 `$refs` / `$parent` / `$root` / `$options` / `$forceUpdate` → `__v23Proxy?.…`、`$vnode` / `$destroy` → `__v23Proxy?.$.…`（proxy は setup で取得するためメソッド内でも安全）；`$ssrContext` → setup で取得した `useSSRContext()`（SSR ビルドのみ）；`data()` prelude/短縮/`this.prop` → IIFE/`props.*`；ローカル `components` を `defineOptions.components` へインライン（文字列 `:is`）；`defineExpose`。  
-   **data の `this._xxx`：** `_xxx` が `data()` キーなら他 data 同様 ref 化（+ AI-TODO：Vue2 はアンダースコアをインスタンスにプロキシしない）。data 以外のカスタムフィールド（例 `this._timer = …`）→ インスタンスごとのプレーンオブジェクト `__v23Self._xxx`（非リアクティブ、Vue2 と同じ）。Vue 内部 `_uid` などは `this._*` のまま。
+   なお AI（ラップアップ）：**`options.model`**、上記の Options 保持コンポーネント（Options のままか composable 化）、**`$children`**（Vue3 削除 to template ref）、子の **`$destroy`**、**`this.$options.methods`/`computed`/…**（script setup では空 to ローカル束縛を使う）、素の `.js`/`.ts` Options。ラップアップ後は **AI-TODO 表記を削除**。  
+   **確定パス済み：** `this.$el` / 裸 `$refs` / `$parent` / `$root` / `$options` / `$forceUpdate` to `__v23Proxy?.…`、`$vnode` / `$destroy` to `__v23Proxy?.$.…`（proxy は setup で取得するためメソッド内でも安全）；`$ssrContext` to setup で取得した `useSSRContext()`（SSR ビルドのみ）；`data()` prelude/短縮/`this.prop` to IIFE/`props.*`；ローカル `components` を `defineOptions.components` へインライン（文字列 `:is`）；`defineExpose`。  
+   **data の `this._xxx`：** `_xxx` が `data()` キーなら他 data 同様 ref 化（+ AI-TODO：Vue2 はアンダースコアをインスタンスにプロキシしない）。data 以外のカスタムフィールド（例 `this._timer = …`）to インスタンスごとのプレーンオブジェクト `__v23Self._xxx`（非リアクティブ、Vue2 と同じ）。Vue 内部 `_uid` などは `this._*` のまま。
 
 **関連する確定パスのエッジ（テストあり；「リスク」ではないが範囲あり）：**
 
@@ -82,17 +82,17 @@ AI がコメントを逐項処理します。スクリプト側はセマンテ�
 |------|------------|--------|
 | `$mount` + `router`/`store` | 省略記法も `router: x` も `.use(…)` へ（`{` 直後の先頭キー含む） | pinia / i18n / 独自プラグイン |
 | `Vue.extend` / `Ctor.extend` | `__v23Extend`（関数）。`new` 呼び出し（別名・import 含む）は `__v23New`。`new Ctor()` は `createApp` でマウント；コンポーネントとしては状態付き定義を描画。`extends` は基底ラッパーを剥がす | `new Ctor({ data, store, router })` の `propsData` / `el` 以外；import でもローカル束縛でもない自由グローバルの `new` |
-| 同一ファイル `mixins: [mid]` | `mid.mixins` → mid → host を再帰 | `import` の mixin（コンポーネントは Options API のまま） |
+| 同一ファイル `mixins: [mid]` | `mid.mixins` to mid to host を再帰 | `import` の mixin（コンポーネントは Options API のまま） |
 | import の mixin / `extends` | Options API 保持 + AI-TODO（`<script setup>` へ変換しない） | composable の自動抽出 |
 | 素の `.js`/`.ts` Options / mixin | 検出 + AI-TODO；`export default` を**保持** | `.vue` 外で `<script setup>` へ自動変換 |
 | `data()` 短縮 / `this.prop` 初期値 | IIFE または `props.*`（TDZ 回避） | data() 内の非 prop `this` |
-| components + 文字列 `:is` | ファクトリを `defineOptions({ components })` へインライン（setup 外へ巻き上げられるため script setup のローカルは参照不可）；モジュールローカルを参照するファクトリ → `const` のみ（タグ用） | テンプレート `:is` 文字列の書き換え |
+| components + 文字列 `:is` | ファクトリを `defineOptions({ components })` へインライン（setup 外へ巻き上げられるため script setup のローカルは参照不可）；モジュールローカルを参照するファクトリ to `const` のみ（タグ用） | テンプレート `:is` 文字列の書き換え |
 | `data()` キーが import と同名 | 内部 ref をリネーム；import を再宣言するエイリアスは出さない | — |
 | 親 `$refs` から子メソッド | `defineExpose` methods/data/computed | 選択的 expose 方針 |
 | `filters` と `methods` 同名 | method を残し、filter は `__v23Filter_<name>` としてマージ；mustache / `v-bind` の呼び出しを書き換え（Vue2 の filter はそこだけ）。イベントは method のまま | グローバル `Vue.filter`；スクリプトの `this.$options.filters` |
-| 非同期 `() => import()` / loading·error·delay オブジェクト | → `defineAsyncComponent`（フィールド対応）；既に `defineAsyncComponent` 内の factory は再ラップしない | 独自 Promise loader（`import` 以外）；スプレッド / 未知キーを含むオプションオブジェクトはそのまま（損失のある書き換えをしない）；ルートレコードの `component: () => import()` は素の loader のまま |
-| Vue Router 3 モジュール（`router` プラグイン、既定 `migrate`） | `new VueRouter` → `createRouter` + `createWebHistory`/`createWebHashHistory`/`createMemoryHistory`（`mode`/`base` から；mode なし → hash）、`*` → `/:pathMatch(.*)*`、`scrollBehavior` x/y → left/top、`addRoutes` → `addRoute`、`onReady` → `isReady`、`currentRoute` → `.value`、`Vue.use` / prototype `push` パッチ削除；`<script setup>` 内の `this.$route`/`$router` → `useRoute()`/`useRouter()` | `getMatchedComponents` / `router.match`（AI-TODO）；ガードの `next` 意味論；Options のまま残すコンポーネントは `this.$route` のまま |
-| 連結 / テンプレート文字列パスの動的 `import()` | `import('@/views/' + n + '.vue')` → `import.meta.glob('<相対ディレクトリ>/**/*.vue')` + キー参照（無い場合は webpack 同様に reject） | 拡張子サフィックスなし、ベアパッケージ接頭辞、完全に動的なパス |
+| 非同期 `() => import()` / loading·error·delay オブジェクト | to `defineAsyncComponent`（フィールド対応）；既に `defineAsyncComponent` 内の factory は再ラップしない | 独自 Promise loader（`import` 以外）；スプレッド / 未知キーを含むオプションオブジェクトはそのまま（損失のある書き換えをしない）；ルートレコードの `component: () => import()` は素の loader のまま |
+| Vue Router 3（`router` プラグイン、既定 `migrate`） | モジュール：`createRouter`+history、catch-all、`scrollBehavior` x/y/selector→left/top/el **および**アサーション（`xy-shape`→`lte-shape`、`sample.x\|y\|selector`）、`addRoutes`/`onReady`/`currentRoute.value`；Options→setup 後は `$route`/`$router` と `const self = this`+`self.foo` もスクリプト | `getMatchedComponents` / `router.match`（AI-TODO）；ガードは可能なら `return`；**keep-options**；probe router は `shallowRef`（G013） |
+| 連結 / テンプレート文字列パスの動的 `import()` | `import('@/views/' + n + '.vue')` to `import.meta.glob('<相対ディレクトリ>/**/*.vue')` + キー参照（無い場合は webpack 同様に reject） | 拡張子サフィックスなし、ベアパッケージ接頭辞、完全に動的なパス |
 | ソース上の既存 TS 注釈 | `ref<T>` / `defineProps` / メソッド署名へ搬送 | 注釈が無いのにジェネリクスや PropType を発明 |
 | `ingest` コピー | スタイル/アセット（scss/css/画像/フォント…）もコピー；import 書き換えで `.vue` 拡張子を保持 | env / 工程設定（AI ベース） |
 

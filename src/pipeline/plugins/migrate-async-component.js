@@ -3,8 +3,8 @@ const { migrateAsyncComponent } = require('../../transform/js-async-component')
 const { applySfcTransforms } = require('../../transform/apply-sfc')
 
 /**
- * Vue2 async factories → defineAsyncComponent (deterministic).
- * Runs before options→script-setup so hoisted components keep the wrap.
+ * Vue2 async factories to defineAsyncComponent (deterministic).
+ * Runs before optionstoscript-setup so hoisted components keep the wrap.
  */
 
 function looksLike(code) {
@@ -19,7 +19,7 @@ function looksLike(code) {
 
 module.exports = createPlugin({
   name: 'migrate-async-component',
-  description: 'Async factories → defineAsyncComponent; map loading/error/delay fields',
+  description: 'Async factories to defineAsyncComponent; map loading/error/delay fields',
   version: '0.1.0',
   defaults: { enabled: true, stream: 'js' },
   match(ctx, api) {
@@ -38,7 +38,7 @@ module.exports = createPlugin({
         ctx.report({
           level: 'info',
           plugin: 'migrate-async-component',
-          message: 'async→defineAsyncComponent changes ×' + result.changes.length,
+          message: 'asynctodefineAsyncComponent changes ×' + result.changes.length,
         })
       }
       return
@@ -50,7 +50,7 @@ module.exports = createPlugin({
       ctx.report({
         level: 'info',
         plugin: 'migrate-async-component',
-        message: 'async→defineAsyncComponent changes ×' + result.changes.length,
+        message: 'asynctodefineAsyncComponent changes ×' + result.changes.length,
       })
     }
   },

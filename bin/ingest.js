@@ -74,23 +74,23 @@ function main() {
   console.log('Source root:', result.sourceRoot)
   console.log('Base root:', result.baseRoot)
   if (result.backedUpCount) {
-    console.log('Backed up overwritten files:', result.backedUpCount, '→', result.backupDir)
+    console.log('Backed up overwritten files:', result.backedUpCount, 'to', result.backupDir)
   }
   console.log(
     'Base aliases:',
     Object.keys(result.baseAlias)
-      .map((k) => k + '→' + result.baseAlias[k])
+      .map((k) => k + 'to' + result.baseAlias[k])
       .join(', ')
   )
   console.log('dryRun:', result.dryRun)
   console.log('Files:', result.files.length)
 
   result.files.forEach((f) => {
-    console.log(`  ${f.from}  →  ${f.to}`)
+    console.log(`  ${f.from}  to  ${f.to}`)
     ;(f.changes || [])
       .filter((c) => c.to)
       .forEach((c) => {
-        console.log(`    import "${c.from}" → "${c.to}" (${c.reason})`)
+        console.log(`    import "${c.from}" to "${c.to}" (${c.reason})`)
       })
     ;(f.changes || [])
       .filter((c) => !c.to && c.reason !== 'alias-passthrough')

@@ -235,7 +235,7 @@ function main() {
         (item.file || '?') +
         ':' +
         (item.line || '?') +
-        '  →  ' +
+        '  to  ' +
         (item.specifier || '?') +
         (item.missing ? '  (missing ' + item.missing + ')' : '')
     )

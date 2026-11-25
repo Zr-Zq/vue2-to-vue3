@@ -46,9 +46,9 @@ const CANNOT_FULLY_AUTO = [
   },
   {
     category: 'options-to-composition',
-    title: 'Options API → Composition API (scope / this / lifecycle)',
+    title: 'Options API to Composition API (scope / this / lifecycle)',
     reason:
-      'data/computed/watch/methods/mixins/lifecycle and this.$refs/$emit/$options etc. need AI rewrite to setup/script setup; scripts do not auto-convert Options→Composition',
+      'data/computed/watch/methods/mixins/lifecycle and this.$refs/$emit/$options etc. need AI rewrite to setup/script setup; scripts do not auto-convert OptionstoComposition',
   },
 ]
 
@@ -96,7 +96,7 @@ module.exports = createPlugin({
 
     // Short human-readable checklist
     const md = []
-    md.push('# Vue2→Vue3 preflight risk report')
+    md.push('# Vue2toVue3 preflight risk report')
     md.push('')
     md.push('- Total: ' + summary.total)
     md.push('- HTML/template: ' + htmlRisks.length)

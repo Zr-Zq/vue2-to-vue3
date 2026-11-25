@@ -1,8 +1,8 @@
 /**
  * Rewrite Vue2 instance event APIs to a project-local $bus:
- *   this.$on / $off / $once  →  this.$bus.$on / $off / $once
- *   this.$emit('evt') for events that were $on/$once'd in the same file → this.$bus.$emit
- *     (self-listen pattern). Other $emit stay as component→parent events.
+ *   this.$on / $off / $once  to  this.$bus.$on / $off / $once
+ *   this.$emit('evt') for events that were $on/$once'd in the same file to this.$bus.$emit
+ *     (self-listen pattern). Other $emit stay as componenttoparent events.
  */
 function migrateInstanceEvents(code) {
   const changes = []

@@ -1,10 +1,10 @@
 /**
  * Deterministic JS API compatibility rewrites:
- * - beforeDestroy → beforeUnmount / destroyed → unmounted
- * - this.$set / Vue.set → direct assignment
- * - this.$delete / Vue.delete → delete
- * - this.$listeners → this.$attrs
- * - this.$scopedSlots → this.$slots (whole file, not only render)
+ * - beforeDestroy to beforeUnmount / destroyed to unmounted
+ * - this.$set / Vue.set to direct assignment
+ * - this.$delete / Vue.delete to delete
+ * - this.$listeners to this.$attrs
+ * - this.$scopedSlots to this.$slots (whole file, not only render)
  * - Remove Vue.config.productionTip / silent assignments
  */
 const traverse = require('@babel/traverse').default

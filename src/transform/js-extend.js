@@ -1,8 +1,8 @@
 /**
- * Vue.extend / Sub.extend → __v23Extend (constructable defineComponent).
- * - Vue.extend(opts) → __v23Extend(opts)
- * - Base.extend(opts) → __v23Extend({ extends: Base, ...opts })
- * - new SomeExtend() / const Ctor = SomeExtend; new Ctor() → __v23New(...)
+ * Vue.extend / Sub.extend to __v23Extend (constructable defineComponent).
+ * - Vue.extend(opts) to __v23Extend(opts)
+ * - Base.extend(opts) to __v23Extend({ extends: Base, ...opts })
+ * - new SomeExtend() / const Ctor = SomeExtend; new Ctor() to __v23New(...)
  *   Same file and (via importedExtendNames) imported factories.
  * The helper stays a function so a dynamic `new variable()` and
  * `typeof Ctor === 'function'` keep the Vue2 meaning. Plain defineComponent()

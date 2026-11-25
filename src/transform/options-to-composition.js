@@ -1,40 +1,41 @@
 /**
- * Options API → Composition (setup) — deterministic safe path.
+ * Options API to Composition (setup) — deterministic safe path.
  *
  * - Flatten local object mixins (final winning members); same-file identifiers resolved
  *   including nested mixins:[mid] where mid.mixins:[deep] (imports still AI)
- * - data → ref; computed → computed() / { get, set }; methods → functions
- * - watch → watch(); provide → provide(); inject → inject()
- * - provide primitives → ref() + AI-TODO for inject side (partial)
- * - filters remnant → methods (migrate-filters usually already did this; on name
+ * - data to ref; computed to computed() / { get, set }; methods to functions
+ * - watch to watch(); provide to provide(); inject to inject()
+ * - provide primitives to ref() + AI-TODO for inject side (partial)
+ * - filters remnant to methods (migrate-filters usually already did this; on name
  *   collision keep method and store filter as __v23Filter_<name>)
  * - Output target: <script setup> (no defineComponent / no setup() return)
  * - defineProps / defineEmits / defineOptions macros
- * - directives → const vName = …; inheritAttrs/name → defineOptions
- * - model → AI-TODO (prop/event rename is product-facing)
- * - this.member → member / member.value; official $ APIs (see OFFICIAL_DOLLAR)
- * - this.$el / bare this.$refs / $parent / $root / $options → __v23Proxy?.…
+ * - directives to const vName = …; inheritAttrs/name to defineOptions
+ * - model to AI-TODO (prop/event rename is product-facing)
+ * - this.member to member / member.value; expand `const self = this` then self.foo first
+ * - official $ APIs (see OFFICIAL_DOLLAR)
+ * - this.$el / bare this.$refs / $parent / $root / $options to __v23Proxy?.…
  *   (setup captures getCurrentInstance()?.proxy so methods do not crash on undefined this)
- * - data() prelude / shorthand / this.prop → IIFE init or props.* rewrite (avoid TDZ)
+ * - data() prelude / shorthand / this.prop to IIFE init or props.* rewrite (avoid TDZ)
  * - local components inlined into defineOptions.components (string :is still resolves)
  * - defineExpose(methods + data + computed) for parent $refs access
- * - imported mixins / extends → keep Options API + AI-TODO (no script setup)
- * - $data → v23Data; $props → props
- * - $createElement → h; $vnode / $forceUpdate / $destroy → __v23Proxy bridge (safe in methods);
- *   $ssrContext → setup-captured useSSRContext() (SSR builds only)
- * - this.$options.methods/computed/… → AI-TODO (gone in script setup)
+ * - imported mixins / extends to keep Options API + AI-TODO (no script setup)
+ * - $data to v23Data; $props to props
+ * - $createElement to h; $vnode / $forceUpdate / $destroy to __v23Proxy bridge (safe in methods);
+ *   $ssrContext to setup-captured useSSRContext() (SSR builds only)
+ * - this.$options.methods/computed/… to AI-TODO (gone in script setup)
  * - $children left AI (removed in Vue3)
- * - this._xxx in data() → ref like other data (+ AI-TODO); custom fields → __v23Self._xxx;
+ * - this._xxx in data() to ref like other data (+ AI-TODO); custom fields to __v23Self._xxx;
  *   Vue-internal _uid etc. left
- * - Lifecycle → onXxx; beforeCreate + created → setup-inline (in that order)
- * - bind/call/apply incomingThis recorded; $parent/$children/$root → AI
- * - TS type carry only (never invent): data() return type → ref<T>; PropType / method annos kept
+ * - Lifecycle to onXxx; beforeCreate + created to setup-inline (in that order)
+ * - bind/call/apply incomingThis recorded; $parent/$children/$root to AI
+ * - TS type carry only (never invent): data() return type to ref<T>; PropType / method annos kept
  *
  * Out of scope (handled by dedicated plugins, not this transform):
- * - this.$router / this.$route → router plugin
- * - this.$store / mapState|mapGetters|… → vuex plugin
- * - this.$i18n / this.$t / this.$tc / … → i18n plugin
- * - class / @Component / vue-property-decorator → typescript plugin (AI-TODO)
+ * - this.$router / this.$route to router plugin
+ * - this.$store / mapState|mapGetters|… to vuex plugin
+ * - this.$i18n / this.$t / this.$tc / … to i18n plugin
+ * - class / @Component / vue-property-decorator to typescript plugin (AI-TODO)
  * Leave those this.* members untouched here so later plugins can rewrite them.
  */
 const parser = require('@babel/parser')
@@ -63,7 +64,7 @@ const OFFICIAL_DOLLAR = {
   $nextTick: { kind: 'nextTick' },
   $attrs: { kind: 'attrs' },
   $slots: { kind: 'slots' },
-  // bare $refs / $el → __v23Proxy bridge; this.$refs.foo still rewritten to ref.value
+  // bare $refs / $el to __v23Proxy bridge; this.$refs.foo still rewritten to ref.value
   $watch: { kind: 'watch' },
   $data: { kind: 'dataBag' },
   $props: { kind: 'propsBag' },
@@ -304,7 +305,7 @@ function rewriteDataFnThisToProps(dataP, propNames) {
       }
     },
     ThisExpression(path) {
-      // e.g. const { label: brokenLabel } = this  →  = props
+      // e.g. const { label: brokenLabel } = this  to  = props
       const parent = path.parentPath
       if (!parent) return
       if (parent.isVariableDeclarator() && parent.node.init === path.node) {
@@ -326,7 +327,7 @@ function keysFromDataReturn(dataP) {
 }
 
 /**
- * Rewrite a lone data init expression: this.prop → props.prop.
+ * Rewrite a lone data init expression: this.prop to props.prop.
  */
 function rewriteDataInitExpr(expr, propNames) {
   if (!expr) return t.identifier('undefined')
@@ -363,7 +364,7 @@ function expandMixinTree(obj, locals, unresolved, chain, seen) {
   chain.push(obj)
 }
 
-/** Merge mixin objects left→right; later wins. Hooks concat. Nested same-file mixins recurse. */
+/** Merge mixin objects lefttoright; later wins. Hooks concat. Nested same-file mixins recurse. */
 function flattenMixins(hostObj, localObjects) {
   const locals = localObjects || Object.create(null)
   const mix = optionProp(hostObj, 'mixins')
@@ -412,7 +413,7 @@ function flattenMixins(hostObj, localObjects) {
       })
     }
 
-    // filters → methods if still present (migrate-filters usually already merged)
+    // filters to methods if still present (migrate-filters usually already merged)
     const filtersP = optionProp(obj, 'filters')
     if (filtersP && t.isObjectProperty(filtersP) && t.isObjectExpression(filtersP.value)) {
       const { filterAlias, withPropKey } = require('./js-filters-option')
@@ -582,7 +583,7 @@ function methodFunctionNode(prop) {
 }
 
 /**
- * From data(): { count: number } { … } — map field → TSType (carry only; skip type refs).
+ * From data(): { count: number } { … } — map field to TSType (carry only; skip type refs).
  * @returns {Map<string, object>}
  */
 function extractDataReturnTypes(dataProp) {
@@ -692,7 +693,7 @@ function collectShadowingParams(flat) {
 }
 
 /**
- * Parse inject option → [{ local, from, defaultNode|null }]
+ * Parse inject option to [{ local, from, defaultNode|null }]
  */
 function parseInjectOption(injectNode) {
   const items = []
@@ -733,6 +734,54 @@ function parseInjectOption(injectNode) {
   return items
 }
 
+/**
+ * Collect local aliases of `this` (`const self = this` / `let that = this`) and rewrite
+ * `self.foo` to `this.foo` so the normal this→ref pass can run. Drop unused alias decls.
+ */
+function expandThisAliases(fnRoot) {
+  const aliasNames = new Set()
+  const aliasDeclPaths = []
+  traverse(t.file(t.program([t.expressionStatement(fnRoot)])), {
+    VariableDeclarator(path) {
+      if (!t.isIdentifier(path.node.id) || !t.isThisExpression(path.node.init)) return
+      aliasNames.add(path.node.id.name)
+      aliasDeclPaths.push(path)
+    },
+  })
+  if (!aliasNames.size) return { aliasNames, changed: false }
+
+  let changed = false
+  traverse(t.file(t.program([t.expressionStatement(fnRoot)])), {
+    MemberExpression(path) {
+      if (path.node.computed) return
+      if (!t.isIdentifier(path.node.object) || !aliasNames.has(path.node.object.name)) return
+      // Do not rewrite the declarator init side
+      path.node.object = t.thisExpression()
+      changed = true
+    },
+  })
+
+  // Remove `const self = this` when self is no longer referenced
+  aliasDeclPaths.forEach((dp) => {
+    const name = dp.node.id.name
+    let used = false
+    traverse(t.file(t.program([t.expressionStatement(fnRoot)])), {
+      Identifier(p) {
+        if (p.node.name !== name) return
+        if (p.parentPath.isVariableDeclarator() && p.parentPath.node.id === p.node) return
+        used = true
+      },
+    })
+    if (used) return
+    const decl = dp.parentPath
+    if (decl.isVariableDeclaration() && decl.node.declarations.length === 1) decl.remove()
+    else dp.remove()
+    changed = true
+  })
+
+  return { aliasNames, changed }
+}
+
 function rewriteThisInFunction(fnNode, ctx) {
   const {
     dataNames,
@@ -743,13 +792,14 @@ function rewriteThisInFunction(fnNode, ctx) {
     templateRefs,
     borrowed,
     nameMap,
-    /** When true (provide()), data/computed this.x → ref binding x (not x.value) */
+    /** When true (provide()), data/computed this.x to ref binding x (not x.value) */
     preferRefBinding,
     refsBagId,
     rootElId,
     dataBagId,
   } = ctx
   const clone = t.cloneNode(fnNode, true)
+  expandThisAliases(clone)
 
   traverse(t.file(t.program([t.expressionStatement(clone)])), {
     MemberExpression(path) {
@@ -773,8 +823,8 @@ function rewriteThisInFunction(fnNode, ctx) {
       const key = path.node.property.name
 
       // this._xxx: Vue2 does not proxy underscore data onto the instance.
-      // data() key → rewrite like other data; custom instance field → per-instance self object;
-      // Vue internals (_uid, _isMounted …) → leave for AI.
+      // data() key to rewrite like other data; custom instance field to per-instance self object;
+      // Vue internals (_uid, _isMounted …) to leave for AI.
       if (key.charAt(0) === '_' && !(dataNames && dataNames.has(key))) {
         if (ctx.selfFields && ctx.selfFields.has(key)) {
           path.replaceWith(t.memberExpression(t.identifier(ctx.selfId), t.identifier(key)))
@@ -1427,7 +1477,7 @@ function migrateOptionsToComposition(code, opts) {
     changes.push({ kind: 'inject', name: it.local, from: typeof it.from === 'string' ? it.from : 'symbol' })
   })
 
-  // data → ref (IIFE when prelude/shorthand/this; else rewrite this.prop → props.prop)
+  // data to ref (IIFE when prelude/shorthand/this; else rewrite this.prop to props.prop)
   const dataInitId = '__v23DataInit'
   const hostDataKeys = flat.lastDataProp ? keysFromDataReturn(flat.lastDataProp) : new Set()
   const useDataIife = !!(flat.lastDataProp && dataFnNeedsIife(flat.lastDataProp))
@@ -1448,7 +1498,7 @@ function migrateOptionsToComposition(code, opts) {
           ),
         ])
       )
-      changes.push({ kind: 'data-iife-init', note: 'data() prelude/shorthand/this → IIFE then ref()' })
+      changes.push({ kind: 'data-iife-init', note: 'data() prelude/shorthand/this to IIFE then ref()' })
     }
   }
 
@@ -1491,21 +1541,21 @@ function migrateOptionsToComposition(code, opts) {
     pushReturn(r, id)
   })
 
-  // this.$el / bare this.$refs → __v23Proxy bridge (+ AI note: prefer explicit template refs)
+  // this.$el / bare this.$refs to __v23Proxy bridge (+ AI note: prefer explicit template refs)
   if (specialUsage.el) {
     changes.push({
       kind: 'this-$el-proxy',
-      note: 'this.$el → __v23Proxy?.$el (setup-captured getCurrentInstance().proxy)',
+      note: 'this.$el to __v23Proxy?.$el (setup-captured getCurrentInstance().proxy)',
     })
   }
   if (specialUsage.bareRefs) {
     changes.push({
       kind: 'this-$refs-proxy',
-      note: 'bare this.$refs → __v23Proxy?.$refs (prefer explicit template refs when possible)',
+      note: 'bare this.$refs to __v23Proxy?.$refs (prefer explicit template refs when possible)',
     })
   }
 
-  // this.$data → v23Data getters/setters
+  // this.$data to v23Data getters/setters
   if (specialUsage.dataBag) {
     setupStmts.push(
       t.variableDeclaration('const', [
@@ -1517,43 +1567,43 @@ function migrateOptionsToComposition(code, opts) {
 
   if (specialUsage.createElement) {
     vueImports.add('h')
-    changes.push({ kind: 'this-$createElement', note: 'this.$createElement → h' })
+    changes.push({ kind: 'this-$createElement', note: 'this.$createElement to h' })
   }
   if (specialUsage.vnode) {
-    changes.push({ kind: 'this-$vnode', note: 'this.$vnode → __v23Proxy?.$.vnode' })
+    changes.push({ kind: 'this-$vnode', note: 'this.$vnode to __v23Proxy?.$.vnode' })
   }
   if (specialUsage.forceUpdate) {
     changes.push({
       kind: 'this-$forceUpdate',
-      note: 'this.$forceUpdate → __v23Proxy?.$forceUpdate',
+      note: 'this.$forceUpdate to __v23Proxy?.$forceUpdate',
     })
   }
   if (specialUsage.destroy) {
     changes.push({
       kind: 'this-$destroy',
-      note: 'this.$destroy → __v23Proxy?.$.appContext.app.unmount (root-oriented; child → prefer v-if / AI)',
+      note: 'this.$destroy to __v23Proxy?.$.appContext.app.unmount (root-oriented; child to prefer v-if / AI)',
     })
   }
   if (specialUsage.isServer) {
-    changes.push({ kind: 'this-$isServer', note: 'this.$isServer → import.meta.env.SSR' })
+    changes.push({ kind: 'this-$isServer', note: 'this.$isServer to import.meta.env.SSR' })
   }
   if (specialUsage.ssrContext) {
-    changes.push({ kind: 'this-$ssrContext', note: 'this.$ssrContext → __v23SsrContext (useSSRContext() in setup, SSR only)' })
+    changes.push({ kind: 'this-$ssrContext', note: 'this.$ssrContext to __v23SsrContext (useSSRContext() in setup, SSR only)' })
   }
   if (specialUsage.propsBag) {
-    changes.push({ kind: 'this-$props', note: 'this.$props → props' })
+    changes.push({ kind: 'this-$props', note: 'this.$props to props' })
   }
   if (specialUsage.options) {
     changes.push({
       kind: 'this-$options-proxy',
-      note: 'this.$options → __v23Proxy?.$options (shape may differ in script setup)',
+      note: 'this.$options to __v23Proxy?.$options (shape may differ in script setup)',
     })
   }
   if (specialUsage.parent) {
-    changes.push({ kind: 'this-$parent-proxy', note: 'this.$parent → __v23Proxy?.$parent' })
+    changes.push({ kind: 'this-$parent-proxy', note: 'this.$parent to __v23Proxy?.$parent' })
   }
   if (specialUsage.root) {
-    changes.push({ kind: 'this-$root-proxy', note: 'this.$root → __v23Proxy?.$root' })
+    changes.push({ kind: 'this-$root-proxy', note: 'this.$root to __v23Proxy?.$root' })
   }
   if (specialUsage.children) {
     changes.push({
@@ -1749,7 +1799,7 @@ function migrateOptionsToComposition(code, opts) {
     }
   }
 
-  // beforeCreate → inline before created. Vue2 beforeCreate could not see data/props/methods,
+  // beforeCreate to inline before created. Vue2 beforeCreate could not see data/props/methods,
   // so running after the ref declarations does not change observable behavior.
   ;(flat.lifecycle.beforeCreate || []).forEach((hp) => {
     const fn = methodFunctionNode(hp)
@@ -1763,7 +1813,7 @@ function migrateOptionsToComposition(code, opts) {
     changes.push({ kind: 'lifecycle', from: 'beforeCreate', to: 'setup-inline' })
   })
 
-  // created → inline
+  // created to inline
   ;(flat.lifecycle.created || []).forEach((hp) => {
     const fn = methodFunctionNode(hp)
     if (!fn) return
@@ -1815,7 +1865,7 @@ function migrateOptionsToComposition(code, opts) {
   if (flat.modelNode) {
     changes.push({
       kind: 'ai-model',
-      note: 'options.model → AI (prop/event ↔ modelValue / update:modelValue)',
+      note: 'options.model to AI (prop/event ↔ modelValue / update:modelValue)',
     })
   }
 
@@ -1937,7 +1987,7 @@ function migrateOptionsToComposition(code, opts) {
     changes.push({ kind: 'defineEmits', events: Array.from(emitEvents) })
   }
 
-  // directives → const vFocus = { ... }
+  // directives to const vFocus = { ... }
   if (flat.directivesNode && t.isObjectProperty(flat.directivesNode) && t.isObjectExpression(flat.directivesNode.value)) {
     flat.directivesNode.value.properties.forEach((dp) => {
       const k = propKeyName(dp)
@@ -2088,7 +2138,7 @@ function migrateOptionsToComposition(code, opts) {
   }
   if (specialUsage.destroy) {
     out =
-      '/* AI-TODO: [options-to-composition] this.$destroy → app.unmount() is root-oriented; child self-destroy prefer v-if */\n' +
+      '/* AI-TODO: [options-to-composition] this.$destroy to app.unmount() is root-oriented; child self-destroy prefer v-if */\n' +
       out
   }
   if (specialUsage.optionsGone.size) {

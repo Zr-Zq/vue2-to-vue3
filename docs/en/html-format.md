@@ -5,11 +5,11 @@
 After a Vue SFC is split into **HTML + JS**, this module only handles **HTML inside `<template>`**:
 
 - Scan tags / attributes / `{{ }}` interpolations (with line numbers)
-- Emit Vue2→Vue3-related findings
+- Emit Vue2toVue3-related findings
 - **Does not change business logic**; risk plugins write `AI-TODO` from these (HTML comments)
 
 Script entry: `2to3/src/analyze-html.js`  
-Split entry: `2to3/src/sfc-parts.js` (`template` → `kind: 'html'`)
+Split entry: `2to3/src/sfc-parts.js` (`template` to `kind: 'html'`)
 
 ---
 
@@ -73,6 +73,6 @@ After `v23-run` / preflight risks:
 |------|------|
 | `.v23/risks.json` | Full risks (including `part: "html"`) |
 | `.v23/html-risks.json` | HTML risks only + per-file summary |
-| `graph.json` → `files[].html` | HTML summary attached at analyze time |
+| `graph.json` to `files[].html` | HTML summary attached at analyze time |
 
 AI handling: open by `file:line`, edit the template; comments look like `<!-- migrate-script note: AI-TODO … -->` (Chinese legacy: `<!-- 迁移脚本注释: AI-TODO … -->`).

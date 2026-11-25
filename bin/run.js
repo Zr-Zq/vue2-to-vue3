@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Main flow: analyze (write project .v23) → pipeline → clean .v23
+ * Main flow: analyze (write project .v23) to pipeline to clean .v23
  */
 const fs = require('fs')
 const path = require('path')
@@ -20,7 +20,7 @@ function printHelp() {
   console.log(`Usage: v23-run <projectRoot> [options]
 
 Full flow:
-  1. Graph analysis → <project>/.v23/graph.json
+  1. Graph analysis to <project>/.v23/graph.json
   2. Preflight risk pipeline + migration pipeline (both pluggable)
   3. Clean .v23 by default (cannot-fully-auto risk list is printed to console)
 
@@ -85,7 +85,7 @@ async function main() {
     process.exit(1)
   }
 
-  console.log('=== 1/3 Preflight analysis →', projectWorkDir(projectRoot))
+  console.log('=== 1/3 Preflight analysis to', projectWorkDir(projectRoot))
   const t0 = Date.now()
   const analyzed = writeAnalyze(projectRoot)
   console.log(

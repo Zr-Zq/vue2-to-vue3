@@ -5,11 +5,11 @@
 Vue SFC を **HTML + JS** に分割したあと、本モジュールは **`<template>` 内の HTML** のみを扱います：
 
 - タグ / 属性 / `{{ }}` 補間を走査（行番号付き）
-- Vue2→Vue3 関連の findings を出力
+- Vue2toVue3 関連の findings を出力
 - **業務ロジックは変更しない**；リスクプラグインがこれに基づき `AI-TODO`（HTML コメント）を書き込む
 
 スクリプト入口：`2to3/src/analyze-html.js`  
-分割入口：`2to3/src/sfc-parts.js`（`template` → `kind: 'html'`）
+分割入口：`2to3/src/sfc-parts.js`（`template` to `kind: 'html'`）
 
 ---
 
@@ -73,6 +73,6 @@ const r2 = analyzeHtmlTemplate(templateCode, { file, range, templateAttrs })
 |----------|------|
 | `.v23/risks.json` | 全量リスク（`part: "html"` を含む） |
 | `.v23/html-risks.json` | HTML リスクのみ + ファイルごとの summary |
-| `graph.json` → `files[].html` | 分析段階で付与された html 要約 |
+| `graph.json` to `files[].html` | 分析段階で付与された html 要約 |
 
 AI の処理：`file:line` で開き template を修正。コメントは `<!-- migrate-script note: AI-TODO … -->`（中国語レガシー：`<!-- 迁移脚本注释: AI-TODO … -->`）。

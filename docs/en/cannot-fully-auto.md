@@ -12,23 +12,23 @@ AI resolves each comment; the script side does not rewrite semantics.
 
 **Already deterministic in scripts — no longer treated as risky (not in this list, no AI-TODO):**
 
-- `.sync` → `v-model:`, drop `.native`, legacy slot → `v-slot`
-- `keep-alive` + `:is` → add `:key`
-- Instance `$on` / `$off` / `$once` → `this.$bus.*` + copy/register `src/compat/v23-bus.js`
-- `render(h)` → drop h arg / flatten data / `$scopedSlots→$slots`
-- `Vue.extend` / `Sub.extend` → constructable `__v23Extend` (`src/compat/v23-extend.js`): still a function, so a dynamic `new variable()` and `typeof Ctor === 'function'` keep the Vue2 meaning. Direct and aliased call sites (`new SomeExtend()` / `const Ctor = SomeExtend; new Ctor()`, same file or via import) → `__v23New(Ctor, extra)`. `$mount` → `createApp().mount`
-- Options → **`<script setup>`** (no `defineComponent`): `data`→`ref`, `computed` (get/set), `watch`, `provide`/`inject`, `filters`→methods, lifecycle→`onXxx` (`beforeCreate` + `created` inline, in that order), `defineProps`/`defineEmits`/`defineOptions`, directives→`vName`, drop `this`+`.value`, shadow alias, official `$` APIs, mixin flatten, bind/call + `this._*` analysis; plugin `migrate-options-composition`. **`options.model`→AI**
-- **Async factories** → `defineAsyncComponent` (`() => import()`, object `{ component, loading, error, delay }`, `Vue.component('X', () => import())`); plugin `migrate-async-component`. Options→setup also inlines local `components` entries (incl. async) into `defineOptions.components`
-- **TS type carry only** (never invent): existing `data(): { x: T }` → `ref<T>`; existing `PropType` / method annotations kept through `defineProps` / functions
-- **Not owned by options-composition** (leave `this.$…` for dedicated plugins): `$router`/`$route` → `router`; `$store` / `map*` → `vuex`; `$i18n`/`$t`/`$tc`/… → `i18n`
-- Lifecycle `beforeDestroy`/`destroyed` → `beforeUnmount`/`unmounted`
-- `this.$set`/`Vue.set` → assignment; `$delete`/`Vue.delete` → `delete`
-- `$listeners` → `$attrs`; template `v-on="$listeners"` → `v-bind="$attrs"`
-- Custom directive hook name mapping (`bind`→`beforeMount`, etc.)
-- Template `|` filters → function calls (HTML stream); `filters`→`methods` (JS stream via `.v23/handoff.json`; skip if not found)
-- `>>>` `/deep/` `::v-deep` → `:deep()`
+- `.sync` to `v-model:`, drop `.native`, legacy slot to `v-slot`
+- `keep-alive` + `:is` to add `:key`
+- Instance `$on` / `$off` / `$once` to `this.$bus.*` + copy/register `src/compat/v23-bus.js`
+- `render(h)` to drop h arg / flatten data / `$scopedSlotsto$slots`
+- `Vue.extend` / `Sub.extend` to constructable `__v23Extend` (`src/compat/v23-extend.js`): still a function, so a dynamic `new variable()` and `typeof Ctor === 'function'` keep the Vue2 meaning. Direct and aliased call sites (`new SomeExtend()` / `const Ctor = SomeExtend; new Ctor()`, same file or via import) to `__v23New(Ctor, extra)`. `$mount` to `createApp().mount`
+- Options to **`<script setup>`** (no `defineComponent`): `data`to`ref`, `computed` (get/set), `watch`, `provide`/`inject`, `filters`tomethods, lifecycleto`onXxx` (`beforeCreate` + `created` inline, in that order), `defineProps`/`defineEmits`/`defineOptions`, directivesto`vName`, drop `this`+`.value`, shadow alias, official `$` APIs, mixin flatten, bind/call + `this._*` analysis; plugin `migrate-options-composition`. **`options.model`toAI**
+- **Async factories** to `defineAsyncComponent` (`() => import()`, object `{ component, loading, error, delay }`, `Vue.component('X', () => import())`); plugin `migrate-async-component`. Optionstosetup also inlines local `components` entries (incl. async) into `defineOptions.components`
+- **TS type carry only** (never invent): existing `data(): { x: T }` to `ref<T>`; existing `PropType` / method annotations kept through `defineProps` / functions
+- **Not owned by options-composition** (leave `this.$…` for dedicated plugins): `$router`/`$route` to `router`; `$store` / `map*` to `vuex`; `$i18n`/`$t`/`$tc`/… to `i18n`
+- Lifecycle `beforeDestroy`/`destroyed` to `beforeUnmount`/`unmounted`
+- `this.$set`/`Vue.set` to assignment; `$delete`/`Vue.delete` to `delete`
+- `$listeners` to `$attrs`; template `v-on="$listeners"` to `v-bind="$attrs"`
+- Custom directive hook name mapping (`bind`to`beforeMount`, etc.)
+- Template `|` filters to function calls (HTML stream); `filters`to`methods` (JS stream via `.v23/handoff.json`; skip if not found)
+- `>>>` `/deep/` `::v-deep` to `:deep()`
 - Remove `Vue.config.productionTip` / `silent` assignments
-- `<template functional>` / `functional: true` → normal components (`$props`/`$attrs`, drop `listeners`)
+- `<template functional>` / `functional: true` to normal components (`$props`/`$attrs`, drop `listeners`)
 
 ---
 
@@ -66,15 +66,15 @@ AI resolves each comment; the script side does not rewrite semantics.
    Keep mixing vs full Composition is an architecture choice.
 
 7. **`provide` of primitives** (`provide-primitive`)  
-   Scripts wrap primitives in `ref` during Options→Composition and insert AI-TODO for inject callers (auto=`partial`).  
+   Scripts wrap primitives in `ref` during OptionstoComposition and insert AI-TODO for inject callers (auto=`partial`).  
    **Scope:** literal string/number/boolean/null in `provide` / `provide()` return object.  
    **AI:** inject sites that treated the value as a raw primitive must use Ref (`.value`) or redesign.
 
-8. **Options → Composition leftovers** (`options-to-composition`)  
+8. **Options to Composition leftovers** (`options-to-composition`)  
    **Kept as Options API (not converted):** components with **imported** mixins or **`options.extends`** — scripts cannot flatten them from one file, and Vue3 still supports `mixins`/`extends`; only an AI-TODO `kept Options API (…)` is added, listing any Vue2-only instance APIs still used (`$createElement`, `$vnode`, `$destroy`, `$children`, `_uid` …) that AI must rewrite.  
-   Still AI (wrap-up): **`options.model`**, kept-Options components above (leave as Options or convert to composables), **`$children`** (removed in Vue3 — use template refs), child **`$destroy`**, **`this.$options.methods`/`computed`/…** (empty in script setup — use the local binding), plain `.js`/`.ts` Options → move into `.vue` when macros needed. After wrap-up, **remove AI-TODO markers**.  
-   **Deterministic now:** `this.$el` / bare `$refs` / `$parent` / `$root` / `$options` / `$forceUpdate` → `__v23Proxy?.…`, `$vnode` / `$destroy` → `__v23Proxy?.$.…` (proxy captured in setup, so safe inside methods); `$ssrContext` → setup-captured `useSSRContext()` (SSR builds only); `data()` prelude/shorthand/`this.prop` → IIFE/`props.*`; local `components` inlined into `defineOptions.components` (string `:is`); `defineExpose` for parent `$refs`.  
-   **Data `this._xxx`:** if `_xxx` is a `data()` key, scripts rewrite it like other data (+ AI-TODO: Vue2 did not proxy underscore fields). Custom non-data fields (e.g. `this._timer = …`) → per-instance plain object `__v23Self._xxx` (non-reactive, same as Vue2). Vue-internal `_uid` etc. stay as `this._*`.
+   Still AI (wrap-up): **`options.model`**, kept-Options components above (leave as Options or convert to composables), **`$children`** (removed in Vue3 — use template refs), child **`$destroy`**, **`this.$options.methods`/`computed`/…** (empty in script setup — use the local binding), plain `.js`/`.ts` Options to move into `.vue` when macros needed. After wrap-up, **remove AI-TODO markers**.  
+   **Deterministic now:** `this.$el` / bare `$refs` / `$parent` / `$root` / `$options` / `$forceUpdate` to `__v23Proxy?.…`, `$vnode` / `$destroy` to `__v23Proxy?.$.…` (proxy captured in setup, so safe inside methods); `$ssrContext` to setup-captured `useSSRContext()` (SSR builds only); `data()` prelude/shorthand/`this.prop` to IIFE/`props.*`; local `components` inlined into `defineOptions.components` (string `:is`); `defineExpose` for parent `$refs`.  
+   **Data `this._xxx`:** if `_xxx` is a `data()` key, scripts rewrite it like other data (+ AI-TODO: Vue2 did not proxy underscore fields). Custom non-data fields (e.g. `this._timer = …`) to per-instance plain object `__v23Self._xxx` (non-reactive, same as Vue2). Vue-internal `_uid` etc. stay as `this._*`.
 
 **Related deterministic edges (tests cover; not “risky” but scoped):**
 
@@ -86,13 +86,13 @@ AI resolves each comment; the script side does not rewrite semantics.
 | Imported mixins / `extends` | Keep Options API + AI-TODO (no `<script setup>`) | Auto composable extraction |
 | Plain `.js`/`.ts` Options / mixins | Detect + AI-TODO; **preserve** `export default` | Auto rewrite to `<script setup>` outside `.vue` |
 | `data()` shorthand / `this.prop` init | IIFE init or `props.*` rewrite (no TDZ) | Non-prop `this` reads inside data() |
-| Components + string `:is` | Inline factories into `defineOptions({ components })` (it is hoisted out of setup, so no script-setup locals); factories referencing module locals → `const` only (tag use) | Template rewrite of `:is` strings |
+| Components + string `:is` | Inline factories into `defineOptions({ components })` (it is hoisted out of setup, so no script-setup locals); factories referencing module locals to `const` only (tag use) | Template rewrite of `:is` strings |
 | `data()` key same name as an import | Internal ref renamed; no alias redeclaring the import | — |
 | Public instance for `$refs` | `defineExpose` methods/data/computed | Selective expose policies |
 | `filters` vs `methods` same name | Keep method; merge filter as `__v23Filter_<name>`; rewrite mustache / `v-bind` calls (Vue2 filters only appear there). Event handlers keep the method | Global `Vue.filter` registry; script `this.$options.filters` |
-| Async `() => import()` / loading·error·delay object | → `defineAsyncComponent` (+ field rename); skip factories already under `defineAsyncComponent` | Custom Promise loaders (non-`import`); option objects with spreads / unknown keys are left untouched (no lossy rewrite); route-record `component: () => import()` stays a plain loader |
-| Vue Router 3 module (`router` plugin, default `migrate`) | `new VueRouter` → `createRouter` + `createWebHistory`/`createWebHashHistory`/`createMemoryHistory` (from `mode`/`base`; no mode → hash), `*` → `/:pathMatch(.*)*`, `scrollBehavior` x/y → left/top, `addRoutes` → `addRoute`, `onReady` → `isReady`, `currentRoute` → `.value`, drop `Vue.use` / prototype `push` patches; in `<script setup>` `this.$route`/`$router` → `useRoute()`/`useRouter()` | `getMatchedComponents` / `router.match` (AI-TODO); guards' `next` semantics; kept-Options components keep `this.$route` |
-| Dynamic `import()` with concatenated / template path | `import('@/views/' + n + '.vue')` → `import.meta.glob('<relative dir>/**/*.vue')` + key lookup (rejects like webpack when missing) | No extension suffix, bare package prefixes, fully dynamic paths |
+| Async `() => import()` / loading·error·delay object | to `defineAsyncComponent` (+ field rename); skip factories already under `defineAsyncComponent` | Custom Promise loaders (non-`import`); option objects with spreads / unknown keys are left untouched (no lossy rewrite); route-record `component: () => import()` stays a plain loader |
+| Vue Router 3 (`router` plugin, default `migrate`) | Module (`.js` **and** `.vue` scripts): `new VueRouter` → `createRouter` + history; `*` catch-all; `scrollBehavior` x/y/selector → left/top/el **plus** common asserts (`xy-shape`→`lte-shape`, `sample.x\|y\|selector`); `addRoutes`/`onReady`/`currentRoute.value`; drop `Vue.use` / push patches. After Options→setup: `$route`/`$router` → `useRoute`/`useRouter`; `const self = this` + `self.foo` expanded to refs | `getMatchedComponents` / `router.match` (AI-TODO); prefer rewriting guard `next` to return values when touching guards; **keep-options**; store abstract probe routers in `shallowRef` not deep `ref` (G013) |
+| Dynamic `import()` with concatenated / template path | `import('@/views/' + n + '.vue')` to `import.meta.glob('<relative dir>/**/*.vue')` + key lookup (rejects like webpack when missing) | No extension suffix, bare package prefixes, fully dynamic paths |
 | TS annotations already in source | Carry into `ref<T>` / `defineProps` / method sigs | Inventing generics or PropType where none existed |
 | `ingest` copy | Also copies styles/assets (scss/css/images/fonts…); keeps `.vue` in rewritten imports | Env / project config (AI base) |
 

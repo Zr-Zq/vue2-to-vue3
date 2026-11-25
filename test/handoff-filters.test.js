@@ -22,7 +22,7 @@ function ok(cond, msg) {
   console.log('  ok:', msg)
 }
 
-console.log('== HTML: |filter → call and collect names ==')
+console.log('== HTML: |filter to call and collect names ==')
 {
   const r = migrateHtmlTemplate('<span :title="a | upper">{{ a | upper }}</span>')
   ok(/upper\(a\)/.test(r.code), 'mustache/bind become upper(a)')
@@ -30,7 +30,7 @@ console.log('== HTML: |filter → call and collect names ==')
   ok(r.filterNames.includes('upper'), 'filterNames includes upper')
 }
 
-console.log('== handoff: register → JS rewrite → done ==')
+console.log('== handoff: register to JS rewrite to done ==')
 {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'v23-handoff-'))
   const project = { root, dryRun: false, shared: {} }
@@ -59,14 +59,14 @@ console.log('== handoff: register → JS rewrite → done ==')
   ok(disk.items[0].status === 'done', 'disk handoff status=done')
 }
 
-console.log('== handoff: filters not found → skipped ==')
+console.log('== handoff: filters not found to skipped ==')
 {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'v23-handoff-skip-'))
   const project = { root, dryRun: false, shared: {} }
   const file = 'src/Empty.vue'
   addFiltersHandoff(project, file, ['upper'])
   const mig = migrateFiltersOption('export default { methods: { x() {} } }', 'Empty.vue')
-  ok(mig.changes.length === 0, 'no filters → JS unchanged')
+  ok(mig.changes.length === 0, 'no filters to JS unchanged')
   resolveHandoffItem(project, {
     file,
     kind: 'filters-to-methods',
@@ -91,7 +91,7 @@ console.log('== edge: chained filters + attr pipe ==')
   ok(r.filterNames.includes('trim'), 'trim collected')
 }
 
-console.log('== edge: handoff path mismatch → still skip safely ==')
+console.log('== edge: handoff path mismatch to still skip safely ==')
 {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'v23-handoff-mismatch-'))
   const project = { root, dryRun: false, shared: {} }
@@ -102,7 +102,7 @@ console.log('== edge: handoff path mismatch → still skip safely ==')
     "export default { name: 'Other', methods: { upper() { return 1 } } }",
     'src/Other.vue'
   )
-  ok(mig.changes.length === 0, 'wrong file / no filters option → no merge')
+  ok(mig.changes.length === 0, 'wrong file / no filters option to no merge')
   // pending remains for Foo.vue until resolved as skipped
   ok(pendingForFile(project, 'src/Foo.vue', 'filters-to-methods').length === 1, 'Foo still pending')
   resolveHandoffItem(project, {

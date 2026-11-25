@@ -111,7 +111,7 @@ function printStats(graph) {
     console.log('Mixin application summary (max 15):')
     graph.mixins.applications.slice(0, 15).forEach((a) => {
       console.log(
-        `  - [${a.scope}] ${a.file} → ${a.mixinFile || a.mixinSource || a.localName || '(inline)'}${a.factory ? ' (factory)' : ''}`
+        `  - [${a.scope}] ${a.file} to ${a.mixinFile || a.mixinSource || a.localName || '(inline)'}${a.factory ? ' (factory)' : ''}`
       )
     })
   }

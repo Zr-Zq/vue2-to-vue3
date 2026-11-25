@@ -8,7 +8,7 @@
  *   --to    Migration target root (base project)
  *
  * Stages:
- *   1 analyze   Analyze source → <from>/.v23 and reports
+ *   1 analyze   Analyze source to <from>/.v23 and reports
  *   2 scaffold  Legacy only — real runs: AI builds Vite+Vue3 base (env + project config; scripts never touch env)
  *   3 copy      Copy by relative path into --to; backup then overwrite if exists
  *   4 pipeline  Deterministic syntax migration + AI-TODO (no env / project-config transforms)
@@ -38,8 +38,8 @@ function printHelp() {
   console.log(`Usage: v23-migrate --from <sourceRoot> --to <targetRoot> [options]
 
 Workflow:
-  Analyze source → (AI builds base) → copy (backup then overwrite) → pipeline auto-fix + AI-TODO
-  → [PAUSE] AI edits markers → check-refs + check-syntax → may re-run pipeline
+  Analyze source to (AI builds base) to copy (backup then overwrite) to pipeline auto-fix + AI-TODO
+  to [PAUSE] AI edits markers to check-refs + check-syntax to may re-run pipeline
 
 Required:
   --from <dir>          Vue2 source project root
@@ -123,7 +123,7 @@ function looksLikeProject(dir) {
 function stepAnalyze(fromRoot) {
   console.log('\n=== 1. Analyze source project ===')
   const written = writeAnalyze(fromRoot)
-  console.log('Source analysis done →', written.graphPath)
+  console.log('Source analysis done to', written.graphPath)
   console.log('files=', written.graph.stats && written.graph.stats.fileCount)
   return written
 }
@@ -196,7 +196,7 @@ function stepCopy(args) {
     console.log('Sidecar dirs:', sidecars.join(', '))
     sidecars.forEach((name) => {
       if (isNeverCopyDir(name)) {
-        console.log('  -', name, '→ skip (never-copy)')
+        console.log('  -', name, 'to skip (never-copy)')
         return
       }
       const fromSide = path.join(path.resolve(args.from), name)
@@ -209,7 +209,7 @@ function stepCopy(args) {
         args.backup,
         batch
       )
-      console.log('  -', name, '→', side.files.length, 'files')
+      console.log('  -', name, 'to', side.files.length, 'files')
       sidecarResults.push({ name, files: side.files.length, backedUpCount: side.backedUpCount })
     })
   } else {

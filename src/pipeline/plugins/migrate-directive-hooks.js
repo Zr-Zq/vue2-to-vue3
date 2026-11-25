@@ -4,7 +4,7 @@ const { applySfcTransforms } = require('../../transform/apply-sfc')
 
 module.exports = createPlugin({
   name: 'migrate-directive-hooks',
-  description: 'Directive hooks bind/inserted/... → beforeMount/mounted/...',
+  description: 'Directive hooks bind/inserted/... to beforeMount/mounted/...',
   version: '0.1.0',
   defaults: { enabled: true },
   match(ctx, api) {

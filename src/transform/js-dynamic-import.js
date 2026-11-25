@@ -1,9 +1,9 @@
 /**
- * webpack-style dynamic imports with runtime segments → Vite import.meta.glob lookup.
+ * webpack-style dynamic imports with runtime segments to Vite import.meta.glob lookup.
  *
  *   import('@/views/' + name + '.vue')        (webpack builds a context module)
  *   import(`./pages/${name}.vue`)
- * →
+ * to
  *   const __v23Glob0 = import.meta.glob('../views/**' + '/*.vue')   // relative to the importer
  *   __v23LoadGlob(__v23Glob0, '../views/' + name + '.vue')
  *
@@ -83,7 +83,7 @@ function splitSpecifier(arg) {
   return null
 }
 
-/** '@/x/y/' → path relative to the importer dir, always starting with './' or '../' */
+/** '@/x/y/' to path relative to the importer dir, always starting with './' or '../' */
 function relativePrefix(prefix, importerAbs, projectRoot) {
   let targetAbs
   if (prefix.startsWith('@/')) {
@@ -101,7 +101,7 @@ function relativePrefix(prefix, importerAbs, projectRoot) {
   return rel
 }
 
-/** dir part + optional file-name prefix → glob covering nested dirs (webpack context is recursive) */
+/** dir part + optional file-name prefix to glob covering nested dirs (webpack context is recursive) */
 function globPattern(relPrefix, suffix) {
   const slash = relPrefix.lastIndexOf('/')
   const dir = relPrefix.slice(0, slash + 1)

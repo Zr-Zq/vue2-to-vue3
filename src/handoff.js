@@ -1,7 +1,7 @@
 /**
  * HTML stream ↔ JS stream handoff file: .v23/handoff.json
  *
- * After HTML rewrites the template, if JS must finish the job (e.g. |filter → f() needs filters→methods), write a pending item.
+ * After HTML rewrites the template, if JS must finish the job (e.g. |filter to f() needs filterstomethods), write a pending item.
  * JS side consumes it; if matching options are missing, skip without error.
  */
 const fs = require('fs')
@@ -26,10 +26,10 @@ const STREAMS = {
       'migrate-filters',
       'migrate-extend',
       'migrate-mount',
-      // migrate-children disabled: $children → AI (same as $parent/$root)
+      // migrate-children disabled: $children to AI (same as $parent/$root)
       'migrate-instance-events',
       'migrate-dynamic-import',
-      // Before options→script-setup so components:{ Foo: () => import() } become defineAsyncComponent then hoist
+      // Before optionstoscript-setup so components:{ Foo: () => import() } become defineAsyncComponent then hoist
       'migrate-async-component',
       'migrate-options-composition',
     ],
@@ -45,7 +45,7 @@ function emptyHandoff() {
     version: HANDOFF_VERSION,
     updatedAt: null,
     description:
-      'HTML→JS handoff. HTML stream writes pending; JS stream consumes. status=skipped means JS found no editable target (safe to ignore).',
+      'HTMLtoJS handoff. HTML stream writes pending; JS stream consumes. status=skipped means JS found no editable target (safe to ignore).',
     streams: STREAMS,
     items: [],
   }
@@ -104,7 +104,7 @@ function addFiltersHandoff(project, fileRel, filterNames) {
     file: fileRel,
     filters: names,
     status: 'pending',
-    note: 'Template |filter rewritten to function call; need options.filters → methods',
+    note: 'Template |filter rewritten to function call; need options.filters to methods',
     updatedAt: new Date().toISOString(),
   }
   const key = itemKey(item)

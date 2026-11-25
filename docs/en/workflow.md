@@ -15,8 +15,8 @@
 1. analyze     Script: analyze the source project (graph / risk clues)
 2. scaffold    **AI**: create the **Vue3** base (**Vite**; full config + deps installed + **can start** + **seamless script handoff**; see ./ai-scaffold-notes.md)
                · Do not use script `--scaffold` as the real base; **scripts never rewrite `.env*` / VUE_APP↔VITE**
-3. copy        Script: from/src → to/src; also copy root sidecars (script/test/style/mock…)
-               · If a same-named file already exists at the target → back up to to/.v23/backup/<timestamp>/ then overwrite
+3. copy        Script: from/src to to/src; also copy root sidecars (script/test/style/mock…)
+               · If a same-named file already exists at the target to back up to to/.v23/backup/<timestamp>/ then overwrite
                · Rewrite imports to match the base alias (env/project config already prepared by AI)
 4. pipeline    Script: deterministic syntax transforms (sync/native/slot/render/mount/…)
                · Unsafe items get AI-TODO; **no env / project-config migration**

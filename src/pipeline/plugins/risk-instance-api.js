@@ -18,7 +18,7 @@ module.exports = createPlugin({
           if (!chain || !chain.length) return
           const head = chain[0]
           if (!WATCH.has(head)) return
-          // $listeners/$scopedSlots → scripts; $parent/$children/$root → AI
+          // $listeners/$scopedSlots to scripts; $parent/$children/$root to AI
           const scripted = head === '$listeners' || head === '$scopedSlots'
           const treeApi = head === '$parent' || head === '$children' || head === '$root'
           pushRisk(api.project, {

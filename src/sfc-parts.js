@@ -1,8 +1,8 @@
 /**
  * Split a .vue SFC into separately handled parts:
- * - template → html
- * - script / scriptSetup → js (only "real code" enters JS processing)
- * - style → style (exposed here; not processed as js/html by default)
+ * - template to html
+ * - script / scriptSetup to js (only "real code" enters JS processing)
+ * - style to style (exposed here; not processed as js/html by default)
  */
 const compilerSfc = require('@vue/compiler-sfc')
 

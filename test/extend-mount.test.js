@@ -11,11 +11,11 @@ function ok(cond, msg) {
   console.log('  ok:', msg)
 }
 
-console.log('== Vue.extend → defineComponent ==')
+console.log('== Vue.extend to defineComponent ==')
 {
   const src = "import Vue from 'vue'\nconst C = Vue.extend({ name: 'C', props: ['x'] })\n"
   const r = migrateExtend(src)
-  ok(/__v23Extend\(\{ name: 'C'/.test(r.code), 'Vue.extend → __v23Extend')
+  ok(/__v23Extend\(\{ name: 'C'/.test(r.code), 'Vue.extend to __v23Extend')
   ok(/from '@\/compat\/v23-extend'/.test(r.code), 'imports constructable helper')
   ok(!/Vue\.extend/.test(r.code), 'no Vue.extend left')
   ok(!/import Vue from/.test(r.code), 'drops unused Vue default import')
@@ -37,7 +37,7 @@ console.log('== import Vue, { h } drops Vue when only h remains ==')
   ok(!/import Vue\b/.test(r.code), 'no default Vue')
 }
 
-console.log('== Base.extend → defineComponent({ extends }) ==')
+console.log('== Base.extend to defineComponent({ extends }) ==')
 {
   const src = 'const Sub = Base.extend({ methods: { a() {} } })\n'
   const r = migrateExtend(src)
@@ -45,7 +45,7 @@ console.log('== Base.extend → defineComponent({ extends }) ==')
   ok(!/Base\.extend/.test(r.code), 'no Base.extend left')
 }
 
-console.log('== new Vue().$mount → createApp().mount ==')
+console.log('== new Vue().$mount to createApp().mount ==')
 {
   const src = "new Vue({ render: h => h(App) }).$mount('#app')\n"
   const r = migrateMount(src)
@@ -72,7 +72,7 @@ console.log('== edge: Vue.extend nested + already-imported defineComponent ==')
   ].join('\n')
   const r = migrateExtend(src)
   ok(/__v23Extend\(\{ name: 'Base'/.test(r.code), 'outer Vue.extend')
-  ok(/__v23Extend\(\{\s*extends:\s*Base/.test(r.code), 'Base.extend → extends: Base')
+  ok(/__v23Extend\(\{\s*extends:\s*Base/.test(r.code), 'Base.extend to extends: Base')
   ok(/from '@\/compat\/v23-extend'/.test(r.code), 'compat import added')
   ok(!/Vue\.extend|Base\.extend/.test(r.code), 'no .extend left')
 }
@@ -91,11 +91,11 @@ console.log('== edge: $mount with router/store shorthand + chained vm.$mount =='
   ].join('\n')
   const r = migrateMount(src)
   ok(/createApp\(/.test(r.code), 'createApp present')
-  ok(/\.use\(router\)/.test(r.code), 'router → .use(router)')
-  ok(/\.use\(store\)/.test(r.code), 'store → .use(store)')
+  ok(/\.use\(router\)/.test(r.code), 'router to .use(router)')
+  ok(/\.use\(store\)/.test(r.code), 'store to .use(store)')
   ok(!/createApp\(\{[^}]*\brouter\b/.test(r.code), 'router not left inside createApp options')
   ok(/\.mount\(['"]#app['"]\)/.test(r.code), 'mount #app')
-  ok(/\.mount\(['"]#sidecar['"]\)/.test(r.code), 'vm.$mount → .mount')
+  ok(/\.mount\(['"]#sidecar['"]\)/.test(r.code), 'vm.$mount to .mount')
   ok(!/\$mount/.test(r.code), 'no $mount left')
 }
 
@@ -109,7 +109,7 @@ console.log('== edge: router: expr + store shorthand order ==')
   ok(b.uses.indexOf('myStore') !== -1 && b.uses.indexOf('myRouter') !== -1, 'long-form values')
 }
 
-console.log('== new ExtendCtor() → __v23New, including alias ==')
+console.log('== new ExtendCtor() to __v23New, including alias ==')
 {
   const src = [
     "import Vue from 'vue'",
@@ -124,7 +124,7 @@ console.log('== new ExtendCtor() → __v23New, including alias ==')
     '',
   ].join('\n')
   const r = migrateExtend(src)
-  ok(/__v23New\(Ctor\)/.test(r.code), 'alias new Ctor() → __v23New(Ctor)')
+  ok(/__v23New\(Ctor\)/.test(r.code), 'alias new Ctor() to __v23New(Ctor)')
   ok(/__v23New\(Sub, \{ propsData: \{ a: 1 \} \}\)/.test(r.code), 'new Sub(options) keeps the argument')
   ok(/new Date\(\)/.test(r.code), 'new Date() stays')
   ok(!/new Ctor\(/.test(r.code) && !/new Sub\(/.test(r.code), 'extend constructors are not left as new')
@@ -170,7 +170,7 @@ console.log('== imported extend constructor across files ==')
   const use = fs.readFileSync(path.join(dir, 'src', 'use.js'), 'utf8')
   const base = fs.readFileSync(path.join(dir, 'src', 'base.js'), 'utf8')
   ok(result.files >= 1, 'project pass rewrote a file')
-  ok(/__v23New\(Ctor\)/.test(use), 'imported alias new Ctor() → __v23New')
+  ok(/__v23New\(Ctor\)/.test(use), 'imported alias new Ctor() to __v23New')
   ok(/Vue\.extend\(/.test(base), 'factory file is not the fixture workaround')
   ok(/from '@\/compat\/v23-extend'/.test(use), 'call-site file imports the helper')
   fs.rmSync(dir, { recursive: true, force: true })

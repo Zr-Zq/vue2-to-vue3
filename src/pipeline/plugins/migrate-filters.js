@@ -10,7 +10,7 @@ const {
 } = require('../../handoff')
 
 /**
- * JS stream: options.filters → methods.
+ * JS stream: options.filters to methods.
  * Can run alone or consume HTML-stream handoff. Skip (no error) if filters not found.
  * On name collision with methods: keep method, store filter as __v23Filter_<name>,
  * and rewrite mustache / v-bind call sites in the same SFC.
@@ -25,7 +25,7 @@ function collectRenames(changes) {
 
 module.exports = createPlugin({
   name: 'migrate-filters',
-  description: 'JS stream: options.filters → methods (consume HTML handoff; skip if missing)',
+  description: 'JS stream: options.filters to methods (consume HTML handoff; skip if missing)',
   version: '0.3.0',
   defaults: { enabled: true, stream: 'js' },
   match(ctx, api) {
@@ -76,7 +76,7 @@ module.exports = createPlugin({
         ctx.report({
           level: 'info',
           plugin: 'migrate-filters',
-          message: 'filters→methods ×' + allChanges.length,
+          message: 'filterstomethods ×' + allChanges.length,
         })
       }
     } else {
@@ -97,7 +97,7 @@ module.exports = createPlugin({
         ctx.report({
           level: 'info',
           plugin: 'migrate-filters',
-          message: 'filters→methods ×' + allChanges.length,
+          message: 'filterstomethods ×' + allChanges.length,
         })
       }
     }

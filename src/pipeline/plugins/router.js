@@ -3,7 +3,7 @@ const { migrateRouterModule, migrateRouterScriptSetup } = require('../../transfo
 const { applySfcTransforms } = require('../../transform/apply-sfc')
 
 /**
- * Vue Router 3 → 4.
+ * Vue Router 3 to 4.
  * Owns this.$router / this.$route (options-composition leaves them alone).
  * mode 'migrate' (default): deterministic rewrite (see transform/js-router.js).
  * mode 'detect': report only.
@@ -12,8 +12,8 @@ function collectHits(content) {
   const hits = []
   if (/from\s+['"]vue-router['"]/.test(content)) hits.push('import-vue-router')
   if (/new\s+VueRouter\b/.test(content)) hits.push('new VueRouter')
-  if (/mode:\s*['"]history['"]/.test(content)) hits.push('mode:history→createWebHistory')
-  if (/mode:\s*['"]hash['"]/.test(content)) hits.push('mode:hash→createWebHashHistory')
+  if (/mode:\s*['"]history['"]/.test(content)) hits.push('mode:historytocreateWebHistory')
+  if (/mode:\s*['"]hash['"]/.test(content)) hits.push('mode:hashtocreateWebHashHistory')
   if (/Vue\.use\s*\(\s*VueRouter\s*\)/.test(content)) hits.push('Vue.use(VueRouter)')
   if (/\$router\.push|\$route\b/.test(content)) hits.push('instance-api')
   return hits
@@ -21,7 +21,7 @@ function collectHits(content) {
 
 module.exports = createPlugin({
   name: 'router',
-  description: 'Vue Router 3 → 4 (createRouter / history / catch-all / useRoute in script setup)',
+  description: 'Vue Router 3 to 4 (createRouter / history / catch-all / useRoute in script setup)',
   version: '0.2.0',
   defaults: { mode: 'migrate' },
   match(ctx) {
@@ -43,12 +43,27 @@ module.exports = createPlugin({
       let next = ctx.file.content
       let changes = []
       if (isVue) {
-        const result = applySfcTransforms(ctx.file.content, ctx.file.absPath, null, (js, meta) =>
-          meta && meta.setup ? migrateRouterScriptSetup(js, ctx.file.absPath) : { code: js, changes: [] }
-        )
+        // Module rewrite (createRouter / catch-all / …) on every script block — SFC probe
+        // routers live here. Then $route/$router to useRoute/useRouter only in <script setup>
+        // (Options left after keep-options still use this.$route, which Vue3 supports).
+        const result = applySfcTransforms(ctx.file.content, ctx.file.absPath, null, (js, meta) => {
+          let code = js
+          let local = []
+          if (/from\s+['"]vue-router['"]/.test(code) || /new\s+VueRouter\b/.test(code)) {
+            const mod = migrateRouterModule(code, ctx.file.absPath)
+            code = mod.code
+            local = local.concat(mod.changes || [])
+          }
+          if (meta && meta.setup) {
+            const ss = migrateRouterScriptSetup(code, ctx.file.absPath)
+            code = ss.code
+            local = local.concat(ss.changes || [])
+          }
+          return { code, changes: local }
+        })
         next = result.content
         changes = result.changes
-      } else if (/from\s+['"]vue-router['"]/.test(ctx.file.content)) {
+      } else if (/from\s+['"]vue-router['"]/.test(ctx.file.content) || /new\s+VueRouter\b/.test(ctx.file.content)) {
         const result = migrateRouterModule(ctx.file.content, ctx.file.absPath)
         next = result.code
         changes = result.changes
@@ -58,7 +73,7 @@ module.exports = createPlugin({
         ctx.report({
           level: 'info',
           plugin: 'router',
-          message: 'Router 3→4 changes ×' + changes.length + ' (' + [...new Set(changes.map((c) => c.kind))].join(', ') + ')',
+          message: 'Router 3to4 changes ×' + changes.length + ' (' + [...new Set(changes.map((c) => c.kind))].join(', ') + ')',
         })
         return
       }

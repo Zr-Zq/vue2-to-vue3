@@ -1,10 +1,10 @@
 /**
- * Custom directive hook names Vue2 → Vue3 (deterministic map)
- * bind → beforeMount
- * inserted → mounted
- * update → beforeUpdate
- * componentUpdated → updated
- * unbind → unmounted
+ * Custom directive hook names Vue2 to Vue3 (deterministic map)
+ * bind to beforeMount
+ * inserted to mounted
+ * update to beforeUpdate
+ * componentUpdated to updated
+ * unbind to unmounted
  */
 const traverse = require('@babel/traverse').default
 const generate = require('@babel/generator').default

@@ -61,7 +61,7 @@ function insertClassAiTodo(code, decorators) {
 
 module.exports = createPlugin({
   name: 'typescript',
-  description: 'TypeScript detect; class/decorators → AI-TODO (no auto Options/setup rewrite)',
+  description: 'TypeScript detect; class/decorators to AI-TODO (no auto Options/setup rewrite)',
   version: '0.2.0',
   defaults: { mode: 'detect' },
   match(ctx) {

@@ -47,7 +47,7 @@ function rewriteSpecifier(specifier, fromAbsSource, toAbsDest, sourceConfig, bas
     return { next: null, reason: 'url', resolved: null }
   }
 
-  // Already in explicit map (batch ingest: old abs → new abs)
+  // Already in explicit map (batch ingest: old abs to new abs)
   const hit = resolveImport(specifier, fromAbsSource, sourceConfig)
   if (hit.external || !hit.resolved) {
     // Source resolve failed: if @/ and scaffold has same alias, switch to scaffold meaning (keep path segments)
@@ -67,7 +67,7 @@ function rewriteSpecifier(specifier, fromAbsSource, toAbsDest, sourceConfig, bas
     }
   }
 
-  // Single file: dep still inside source project → map via mirrored path relative to source root
+  // Single file: dep still inside source project to map via mirrored path relative to source root
   const relInSource = toPosixRel(srcAbs, sourceConfig.root)
   if (relInSource && !relInSource.startsWith('..')) {
     const mirrored = path.join(baseConfig.root, relInSource)

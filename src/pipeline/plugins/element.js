@@ -1,11 +1,11 @@
 const { createPlugin } = require('../create-plugin')
 
 /**
- * ElementUI → Element Plus plugin slot.
+ * ElementUI to Element Plus plugin slot.
  */
 module.exports = createPlugin({
   name: 'element',
-  description: 'Element UI → Element Plus (pluggable)',
+  description: 'Element UI to Element Plus (pluggable)',
   version: '0.1.0',
   defaults: {
     mode: 'detect',
@@ -30,7 +30,7 @@ module.exports = createPlugin({
     if (/Vue\.use\s*\(\s*ElementUI/.test(ctx.file.content)) hits.push('Vue.use(ElementUI)')
     if (/<el-[a-z]/.test(ctx.file.content)) hits.push('el-* templates')
     if (/MessageBox|\$message|\$confirm|\$loading/.test(ctx.file.content)) hits.push('service-api')
-    if (/size:\s*['"]medium['"]/.test(ctx.file.content)) hits.push('size:medium→default')
+    if (/size:\s*['"]medium['"]/.test(ctx.file.content)) hits.push('size:mediumtodefault')
 
     ctx.report({
       level: hits.length ? 'warn' : 'info',

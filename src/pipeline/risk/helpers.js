@@ -146,7 +146,7 @@ function memberName(node) {
 }
 
 function thisMemberChain(node) {
-  // this.a.b → ['a','b']; non-computed only
+  // this.a.b to ['a','b']; non-computed only
   const parts = []
   let cur = node
   while (t.isMemberExpression(cur)) {

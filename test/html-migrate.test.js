@@ -18,8 +18,8 @@ function ok(cond, msg) {
 console.log('== sync: must become v-model:prop, not only drop .sync ==')
 {
   const r = rewriteSync('<Child :title.sync="t" :visible.sync="v" />')
-  ok(/v-model:title="t"/.test(r.code), 'title → v-model:title')
-  ok(/v-model:visible="v"/.test(r.code), 'visible → v-model:visible')
+  ok(/v-model:title="t"/.test(r.code), 'title to v-model:title')
+  ok(/v-model:visible="v"/.test(r.code), 'visible to v-model:visible')
   ok(!/\.sync/.test(r.code), 'no .sync left')
   // Counterexample: stripping sync alone would leave one-way :title="t" (do not touch v-model:title)
   ok(!/(^|[^-\w])\:title="t"/.test(r.code), 'not one-way :title')
@@ -28,7 +28,7 @@ console.log('== sync: must become v-model:prop, not only drop .sync ==')
 console.log('== native: drop .native ==')
 {
   const r = migrateHtmlTemplate('<Eg @click.native="on" @keyup.enter.native="k" />')
-  ok(/@click="on"/.test(r.code), '@click.native → @click')
+  ok(/@click="on"/.test(r.code), '@click.native to @click')
   ok(/@keyup\.enter="k"/.test(r.code), 'keep other modifiers')
   ok(!/\.native/.test(r.code), 'no .native')
 }
@@ -44,8 +44,8 @@ console.log('== slots unify to # ==')
     '</Host>',
   ].join('\n')
   const r = migrateHtmlTemplate(src)
-  ok(/#header/.test(r.code), 'slot=header → #header')
-  ok(/#body="\{ ok \}"/.test(r.code) || /#body="\{ ok\}"/.test(r.code) || /#body="/.test(r.code), 'slot+scope → #body')
+  ok(/#header/.test(r.code), 'slot=header to #header')
+  ok(/#body="\{ ok \}"/.test(r.code) || /#body="\{ ok\}"/.test(r.code) || /#body="/.test(r.code), 'slot+scope to #body')
   ok(/#footer/.test(r.code), 'span slot wrapped with #footer')
   ok(!/\sslot=/.test(r.code), 'no legacy slot=')
   ok(!/slot-scope=/.test(r.code), 'no slot-scope')
@@ -92,7 +92,7 @@ console.log('== keep-alive + :is add :key ==')
   ok(already.changes.length === 0, 'existing :key not duplicated')
 }
 
-console.log('== template v-for :key → inner (Vue2) ==')
+console.log('== template v-for :key to inner (Vue2) ==')
 {
   const { rewriteTemplateVForKey } = require('../src/transform/html-directives')
   const r = rewriteTemplateVForKey(

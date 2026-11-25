@@ -31,7 +31,7 @@ function scanProvideObject(obj, file, project, loc) {
         loc: locOf(prop) || loc,
         evidence: key,
         hint:
-          'Options→Composition wraps primitives in ref(); inject side must use Ref (.value). Sample inject call sites and confirm (auto=partial).',
+          'OptionstoComposition wraps primitives in ref(); inject side must use Ref (.value). Sample inject call sites and confirm (auto=partial).',
       })
     }
   })

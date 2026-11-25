@@ -2,7 +2,7 @@
   "name": "vue2-to-vue3-preflight",
   "version": "0.1.0",
   "private": true,
-  "description": "Vue2→Vue3：前置分析 + 可插拔迁移流水线",
+  "description": "Vue2toVue3：前置分析 + 可插拔迁移流水线",
   "bin": {
     "v23-analyze": "./bin/analyze.js",
     "v23-pipeline": "./bin/pipeline.js",

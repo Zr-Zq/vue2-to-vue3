@@ -27,7 +27,7 @@ function alreadyAnnotated(line, risk) {
 
 /**
  * Line offset of a content slice inside a .vue file
- * (0-based: first line of the block → file line = offset).
+ * (0-based: first line of the block to file line = offset).
  */
 function scriptLineOffset(fileContent, scriptContent) {
   if (!scriptContent) return 0
@@ -70,8 +70,8 @@ const TEMPLATE_CATEGORIES = new Set([
 
 /**
  * Insert AI-TODO comments into content:
- * - Vue template (html) → <!-- -->
- * - Vue script / plain js → /* *\/
+ * - Vue template (html) to <!-- -->
+ * - Vue script / plain js to /* *\/
  * @param {string} content
  * @param {object[]} risks
  * @param {{ kind?: string, scriptContents?: string[], absPath?: string }} meta
@@ -113,7 +113,7 @@ function annotateContent(content, risks, meta) {
     if (lineIdx < 0) {
       lineIdx = 0
       if (isVue) {
-        // Template risks → template; script risks → first real script
+        // Template risks to template; script risks to first real script
         if (inTemplateCat && decomposed && decomposed.template && decomposed.template.range) {
           lineIdx = decomposed.template.range.startLine - 1
         } else if (decomposed && decomposed.jsParts && decomposed.jsParts[0] && decomposed.jsParts[0].range) {

@@ -2,11 +2,11 @@
  * Normalize Vue2 deep selectors to Vue3 `:deep(...)`.
  *
  * Handles:
- *   ::v-deep .sel / ::v-deep.sel  → :deep(.sel)   (batch-replace style)
- *   ::v-deep(.sel)                → :deep(.sel)
- *   ::deep(.sel)                  → :deep(.sel)
- *   >>> .sel / /deep/ .sel        → :deep(.sel)
- *   leftover >>> / /deep/         → :deep
+ *   ::v-deep .sel / ::v-deep.sel  to :deep(.sel)   (batch-replace style)
+ *   ::v-deep(.sel)                to :deep(.sel)
+ *   ::deep(.sel)                  to :deep(.sel)
+ *   >>> .sel / /deep/ .sel        to :deep(.sel)
+ *   leftover >>> / /deep/         to :deep
  *
  * Already-correct `:deep(...)` is left unchanged.
  */
@@ -19,7 +19,7 @@ function migrateCssDeep(code) {
   const changes = []
   let out = String(code || '')
 
-  // ::v-deep(.foo) / ::deep(.foo) → :deep(.foo)
+  // ::v-deep(.foo) / ::deep(.foo) to :deep(.foo)
   out = out.replace(/::v-deep\s*\(([^)]+)\)/g, (m, inner) => {
     changes.push({ kind: 'v-deep-paren', from: m.slice(0, 40) })
     return ':deep(' + String(inner).trim() + ')'
@@ -29,7 +29,7 @@ function migrateCssDeep(code) {
     return ':deep(' + String(inner).trim() + ')'
   })
 
-  // ::v-deep\s*selector → :deep(selector)
+  // ::v-deep\s*selector to :deep(selector)
   // Find: ::v-deep\s*([.#*:\[a-zA-Z_-][^,{\n]*?)\s*(?=,|\{|$)
   // Replace: :deep($1)
   out = out.replace(new RegExp('::v-deep\\s*' + DEEP_SEL, 'g'), (m, sel) => {
@@ -39,7 +39,7 @@ function migrateCssDeep(code) {
     return ':deep(' + s + ')'
   })
 
-  // >>> selector / /deep/ selector → :deep(selector)
+  // >>> selector / /deep/ selector to :deep(selector)
   out = out.replace(new RegExp('(?:>>>|\\/deep\\/)\\s*' + DEEP_SEL, 'g'), (m, sel) => {
     const s = String(sel).trim()
     if (!s) return m

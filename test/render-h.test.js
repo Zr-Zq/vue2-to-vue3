@@ -44,7 +44,7 @@ section('2) render: (h) => arrow')
   ok(/import\s*\{[^}]*\bh\b/.test(r.code), 'import h')
 }
 
-section('3) $scopedSlots → $slots')
+section('3) $scopedSlots to $slots')
 {
   const src = `
 export default {

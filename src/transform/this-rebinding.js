@@ -74,7 +74,7 @@ function thisArgKind(node) {
 }
 
 function calleeMethodName(callee) {
-  // obj.foo.call(...) → foo ; this.foo.bind(...) → foo
+  // obj.foo.call(...) to foo ; this.foo.bind(...) to foo
   if (!t.isMemberExpression(callee)) return null
   const obj = callee.object
   if (t.isMemberExpression(obj) && t.isIdentifier(obj.property) && !obj.computed) {

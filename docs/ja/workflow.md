@@ -15,8 +15,8 @@
 1. analyze     スクリプト：ソースプロジェクトを分析（グラフ / リスク手がかり）
 2. scaffold    **AI**：Vue3 ベースを作成（**Vite**；設定完備 + 依存インストール + **起動可能** + **スクリプトとシームレス**；./ai-scaffold-notes.md 参照）
                · スクリプトの `--scaffold` を正式ベースにしない；**スクリプトは `.env*` / VUE_APP↔VITE を触らない**
-3. copy        スクリプト：from/src → to/src；ルート級サイドカー（script/test/style/mock…）もコピー
-               · 移行先に同名ファイルがある → 先に to/.v23/backup/<タイムスタンプ>/ へバックアップしてから上書き
+3. copy        スクリプト：from/src to to/src；ルート級サイドカー（script/test/style/mock…）もコピー
+               · 移行先に同名ファイルがある to 先に to/.v23/backup/<タイムスタンプ>/ へバックアップしてから上書き
                · ベースの alias に合わせて import を書き換え（env/工程設定は AI が準備済み）
 4. pipeline    スクリプト：確定的な構文移行（sync/native/slot/render/mount/…）
                · 安定して直せないものは AI-TODO；**環境変数・工程設定は移行しない**

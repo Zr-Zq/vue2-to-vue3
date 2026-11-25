@@ -14,7 +14,7 @@ Migration step 2 has the **AI create the target project base** (`--to`). The bas
 AI must finish scaffolding to this bar — not a hollow shell:
 
 1. **Full project config** from the source, upgraded for Vue3 + Vite (see table below).
-2. **`package.json` complete**: Vue3 stack + every runtime/dev dep the source needs (UI, utils, loaders→Vite plugins, etc.).
+2. **`package.json` complete**: Vue3 stack + every runtime/dev dep the source needs (UI, utils, loaderstoVite plugins, etc.).
 3. **`npm install` (or pnpm/yarn) succeeded** under `--to`; `node_modules` present.
 4. **Dev server can start**: `npm run dev` (or the base’s start script) boots without missing-module / missing-config errors. A minimal `main` + router stub is OK until script copy fills business pages.
 5. Env, alias, proxy, public assets, lint/tsconfig, and CDN decisions are already in place.
@@ -28,10 +28,10 @@ The base must match what the scripts already assume so copy / import rewrite / p
 |-------------|-----|
 | Root has `package.json` (prefer also `vite.config.*` and `jsconfig.json` / `tsconfig.json`) | `looksLikeProject(--to)` must be true; otherwise migrate pauses for “AI base” |
 | Default app tree under **`src/`** (same as source `--src` / `--dest-src`) | Script copy is path-relative; odd layouts force special flags |
-| Alias **`@` → `src`** (and `~` if the source used it); keep `jsconfig`/`tsconfig` paths in sync with Vite | `ingest` / `rewrite-imports` resolve and rewrite against the **base** alias; **keep `.vue` extensions** (Vite); ingest also copies styles/assets (scss/css/images/fonts), not only SFC/JS |
+| Alias **`@` to `src`** (and `~` if the source used it); keep `jsconfig`/`tsconfig` paths in sync with Vite | `ingest` / `rewrite-imports` resolve and rewrite against the **base** alias; **keep `.vue` extensions** (Vite); ingest also copies styles/assets (scss/css/images/fonts), not only SFC/JS |
 | Root engineering files only from AI (env, Vite, package.json, lint…) | Scripts **never** migrate env/project config — they must already be correct |
-| Stub `src/main.js` / router OK to be **overwritten** by copy | Do not invent a layout that copy cannot overlay onto. Copied Vue2 `router/index.js` and layouts are migrated by the pipeline (`router` plugin → Vue Router 4, `migrate-dynamic-import` → `import.meta.glob`); do **not** restore the base versions by hand |
-| No waiting on scripts for missing deps, alias, or proxy | Handoff = AI done → script copy+pipeline → AI-TODO only for syntax/semantics |
+| Stub `src/main.js` / router OK to be **overwritten** by copy | Do not invent a layout that copy cannot overlay onto. Copied Vue2 `router/index.js` and layouts are migrated by the pipeline (`router` plugin to Vue Router 4, `migrate-dynamic-import` to `import.meta.glob`); do **not** restore the base versions by hand |
+| No waiting on scripts for missing deps, alias, or proxy | Handoff = AI done to script copy+pipeline to AI-TODO only for syntax/semantics |
 
 If the source used non-`src` roots, mirror that with matching `--dest-src` and document it in `.v23/scaffold-notes.md`; default remains `src/`.
 
@@ -40,7 +40,7 @@ If the source used non-`src` roots, mirror that with matching `--dest-src` and d
 - **Default to Vite + Vue 3** for the base (`create-vue` or a hand-written `vite.config` are both fine).
 - **Do not default to webpack / vue-cli** unless the user explicitly asks, or the source strongly depends on webpack for a short-term preview.
 - Recommended dependency direction: `vue@3`, `vue-router@4`, `pinia` or `vuex@4` as needed, UI chosen to match the source (e.g. Element Plus).
-- Entry: `index.html` + `src/main.js` (or `.ts`), `resolve.alias['@'] → src`.
+- Entry: `index.html` + `src/main.js` (or `.ts`), `resolve.alias['@'] to src`.
 - **Env vars**: AI maps source `.env*` to `VITE_*` and code to `import.meta.env` (do not wait for scripts).
 - **Install**: run the package manager install yourself; do not leave “deps TBD” for scripts or the user.
 
@@ -98,9 +98,9 @@ If any of the following apply, the CDN **must not be silently ignored**:
 ```
 Read index.html / entry html / build externals
   ├─ References vue / router / vuex / element (or a lib already in package)?
-  │     → Must handle: npm-ify or explicit external; never silently keep dual copies
+  │     to Must handle: npm-ify or explicit external; never silently keep dual copies
   └─ Pure utility CDN, and the project does not load it via the Vue stack?
-        → Can ignore: copy as-is into public / html
+        to Can ignore: copy as-is into public / html
 ```
 
 When unsure: record in `ai-todos.md` / `scaffold-notes.md` with tag `CDN`; do not silently drop it.
@@ -187,7 +187,7 @@ ignoreWarnings: [
 ### 4. HTML / JS stream split
 
 - When HTML runs before JS, check `<to>/.v23/handoff.json`.
-- After template `|filter`→function call, the JS stream must run `migrate-filters` (or consume handoff); skip if not found.
+- After template `|filter`tofunction call, the JS stream must run `migrate-filters` (or consume handoff); skip if not found.
 
 ## AI self-check list
 
@@ -200,7 +200,7 @@ After scaffolding, confirm (all required unless noted):
 5. [ ] **Seamless with scripts**: `looksLikeProject` OK; `src/` (or documented dest-src); `@` alias; no post-AI config/env work left for scripts
 6. [ ] **CDN**: framework libs npm-ified or explicitly external; unrelated pure HTML/JS CDN may stay
 7. [ ] Root **`script/` / `test/` and other sidecars** copied into the base; non-Vue stack need not be rewritten
-8. [ ] `@` → `src` alias configured (and paths files agree with Vite)
+8. [ ] `@` to `src` alias configured (and paths files agree with Vite)
 9. [ ] No accidental deletion of source project files
 10. [ ] Webpack multi-style false positives not treated as migration failure
 11. [ ] (Recommended) Write `.v23/scaffold-notes.md` covering config, CDN, sidecar, and any non-default dest-src

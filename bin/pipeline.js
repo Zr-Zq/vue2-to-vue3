@@ -128,7 +128,7 @@ async function main() {
     (config.pipeline || [])
       .filter((e) => (typeof e === 'string' ? true : e.enabled !== false))
       .map((e) => (typeof e === 'string' ? e : e.name || e.use))
-      .join(' → ')
+      .join(' to ')
   )
   console.log('dryRun:', config.dryRun, ' outDir:', config.outDir || '(inplace)')
 

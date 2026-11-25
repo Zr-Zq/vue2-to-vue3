@@ -164,7 +164,7 @@ function loadTsJsPaths(root, map) {
 
 /**
  * Pick the last string literal from an alias assignment expression as the target path.
- * Example: '@': resolve(rootDir, './src')  → ./src
+ * Example: '@': resolve(rootDir, './src')  to ./src
  */
 function pickAliasTarget(expr) {
   const strs = [...expr.matchAll(/['"`]([^'"`]+)['"`]/g)].map(m => m[1]);

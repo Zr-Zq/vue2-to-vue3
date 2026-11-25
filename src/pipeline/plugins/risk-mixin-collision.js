@@ -21,7 +21,7 @@ module.exports = createPlugin({
       byHost[app.file].push(app)
     })
 
-    // Member → multiple mixin sources or clash with same-file options: flag multi-mixin first
+    // Member to multiple mixin sources or clash with same-file options: flag multi-mixin first
     const nameHosts = Object.create(null)
     mixins.memberIndex.forEach((m) => {
       ;(m.appliedBy || []).forEach((a) => {

@@ -1,12 +1,12 @@
 /**
  * HTML/template auto-rewrites:
- * - :prop.sync / v-bind:prop.sync → v-model:prop (do not only drop .sync or updates are lost)
- * - @evt.native / v-on:evt.native → @evt / v-on:evt
- * - Legacy slot / slot-scope → #name / v-slot
+ * - :prop.sync / v-bind:prop.sync to v-model:prop (do not only drop .sync or updates are lost)
+ * - @evt.native / v-on:evt.native to @evt / v-on:evt
+ * - Legacy slot / slot-scope to #name / v-slot
  */
 
 /**
- * :foo.sync="x" / v-bind:foo.sync="x" → v-model:foo="x"
+ * :foo.sync="x" / v-bind:foo.sync="x" to v-model:foo="x"
  * Note: only removing .sync becomes one-way binding and changes behavior.
  */
 function rewriteSync(code) {
@@ -30,7 +30,7 @@ function rewriteSync(code) {
   return { code: out, changes }
 }
 
-/** @click.native.stop → @click.stop ; drop native, keep other modifiers */
+/** @click.native.stop to @click.stop ; drop native, keep other modifiers */
 function rewriteNative(code) {
   const changes = []
   let out = String(code || '')
@@ -80,8 +80,8 @@ function enclosingTemplateSlotName(src, pos) {
 }
 
 /**
- * Legacy slots → unify to # / v-slot
- * - <template slot="a"> → <template #a>
+ * Legacy slots to unify to # / v-slot
+ * - <template slot="a"> to <template #a>
  * - Element slot=: depth-pair wrap; if already inside same-named template slot, only drop slot attr (common for Element menu titles)
  */
 function rewriteSlots(code) {
@@ -268,7 +268,7 @@ function findMatchingClose(src, openEnd, tag) {
 }
 
 /**
- * Same-node v-for + v-if → <template v-for> + inner v-if
+ * Same-node v-for + v-if to <template v-for> + inner v-if
  * Put :key on the inner real element (Vue2 forbids key on template; Vue3 compatible too)
  */
 function rewriteVForVIf(code) {

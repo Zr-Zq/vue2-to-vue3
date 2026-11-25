@@ -4,7 +4,7 @@ const { applySfcTransforms } = require('../../transform/apply-sfc')
 
 module.exports = createPlugin({
   name: 'migrate-deep',
-  description: '>>> /deep/ ::v-deep / ::deep() → :deep()',
+  description: '>>> /deep/ ::v-deep / ::deep() to :deep()',
   version: '0.1.0',
   defaults: { enabled: true },
   match(ctx, api) {

@@ -113,7 +113,7 @@ function extractMixinMembersFromObject(objExpr) {
 }
 
 /**
- * Resolve local binding name → import source (file-relative path)
+ * Resolve local binding name to import source (file-relative path)
  */
 function resolveLocalToImport(localName, imports) {
   if (!localName || !imports) return null
@@ -136,8 +136,8 @@ function resolveLocalToImport(localName, imports) {
 
 /**
  * Collect mixin "applications" in this file:
- * - Vue.mixin(x) / app.mixin(x) → global
- * - mixins: [a, b, createX()] → local
+ * - Vue.mixin(x) / app.mixin(x) to global
+ * - mixins: [a, b, createX()] to local
  */
 function analyzeMixinApplications(ast, meta, imports) {
   const apps = []
@@ -422,7 +422,7 @@ function buildMixinIndex(applications, filesMap) {
     }
   })
 
-  // Member → source reverse lookup
+  // Member to source reverse lookup
   const memberIndex = []
   mixinFiles.forEach((mf) => {
     mf.members.forEach((m) => {

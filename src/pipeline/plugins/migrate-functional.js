@@ -18,7 +18,7 @@ function looksFunctional(src) {
 
 module.exports = createPlugin({
   name: 'migrate-functional',
-  description: '<template functional> / functional:true → normal component (official path)',
+  description: '<template functional> / functional:true to normal component (official path)',
   version: '0.1.0',
   defaults: { enabled: true },
   match(ctx, api) {
@@ -99,7 +99,7 @@ module.exports = createPlugin({
       ctx.report({
         level: 'info',
         plugin: 'migrate-functional',
-        message: 'functional → normal component ×' + allChanges.length,
+        message: 'functional to normal component ×' + allChanges.length,
       })
     }
 

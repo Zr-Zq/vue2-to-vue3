@@ -26,10 +26,10 @@ console.log('== instance events ==')
       go() { this.$emit('self-event', 'ok') }
     }
   `)
-  ok(/this\.\$bus\.\$on\(/.test(r.code), '$on → $bus.$on')
-  ok(/this\.\$bus\.\$once\(/.test(r.code), '$once → $bus.$once')
-  ok(/this\.\$bus\.\$off\(/.test(r.code), '$off → $bus.$off')
-  ok(/this\.\$bus\.\$emit\('self-event'/.test(r.code), 'self-listen $emit → $bus.$emit')
+  ok(/this\.\$bus\.\$on\(/.test(r.code), '$on to $bus.$on')
+  ok(/this\.\$bus\.\$once\(/.test(r.code), '$once to $bus.$once')
+  ok(/this\.\$bus\.\$off\(/.test(r.code), '$off to $bus.$off')
+  ok(/this\.\$bus\.\$emit\('self-event'/.test(r.code), 'self-listen $emit to $bus.$emit')
 }
 
 console.log('== parent $emit kept ==')
@@ -57,12 +57,12 @@ console.log('== edge: $on/$off/$once mixed with parent $emit + string/method ref
       fireParent() { this.$emit('update:title', 'x') }
     }
   `)
-  ok(/this\.\$bus\.\$on\('ping',\s*this\.onPing\)/.test(r.code), '$on method ref → $bus')
-  ok(/this\.\$bus\.\$on\('ping',\s*\(p\)/.test(r.code), '$on arrow → $bus')
-  ok(/this\.\$bus\.\$once\('once-only'/.test(r.code), '$once → $bus')
+  ok(/this\.\$bus\.\$on\('ping',\s*this\.onPing\)/.test(r.code), '$on method ref to $bus')
+  ok(/this\.\$bus\.\$on\('ping',\s*\(p\)/.test(r.code), '$on arrow to $bus')
+  ok(/this\.\$bus\.\$once\('once-only'/.test(r.code), '$once to $bus')
   ok(/this\.\$bus\.\$off\('ping',\s*this\.onPing\)/.test(r.code), '$off with handler')
   ok(/this\.\$bus\.\$off\('ping'\)/.test(r.code), '$off event-only')
-  ok(/this\.\$bus\.\$emit\('ping'/.test(r.code), 'self-listen emit → $bus')
+  ok(/this\.\$bus\.\$emit\('ping'/.test(r.code), 'self-listen emit to $bus')
   ok(/this\.\$emit\('update:title'/.test(r.code), 'parent-facing emit unchanged')
 }
 

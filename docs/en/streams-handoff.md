@@ -2,8 +2,8 @@
 
 ## Principles
 
-- **HTML stream**: only change `<template>` / `<style>` (e.g. `.sync`, slots, `|filter`→call, `:deep()`).
-- **JS stream**: only change `<script>` / options objects (e.g. `filters→methods`, `render(h)`, lifecycle).
+- **HTML stream**: only change `<template>` / `<style>` (e.g. `.sync`, slots, `|filter`tocall, `:deep()`).
+- **JS stream**: only change `<script>` / options objects (e.g. `filterstomethods`, `render(h)`, lifecycle).
 - When there is a cross-stream dependency, **do not hard-couple**: HTML writes handoff, JS consumes; if JS cannot find the target, **skip**.
 
 ## Handoff file
@@ -40,8 +40,8 @@ In `v23.pipeline.js`, `preflightPipeline` may be:
 |-------|---------|
 | `'html-only'` | HTML stream only + light risk summary |
 | `'js-only'` | JS stream only (reads handoff) |
-| `'full'` / array | Full HTML→JS→risks |
-| custom array | e.g. risks-only (HTML quirks + JS risks + `risk-options-composition` + annotate), used by `2.pure-vue-app` before Options→Composition rewrite |
+| `'full'` / array | Full HTMLtoJStorisks |
+| custom array | e.g. risks-only (HTML quirks + JS risks + `risk-options-composition` + annotate), used by `2.pure-vue-app` before OptionstoComposition rewrite |
 
 Example:
 

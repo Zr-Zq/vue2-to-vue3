@@ -28,7 +28,7 @@ module.exports = createPlugin({
               level: 'info',
               auto: 'yes',
               file: ctx.file.path,
-              message: 'Global Vue.extend (script → defineComponent)',
+              message: 'Global Vue.extend (script to defineComponent)',
               evidence: item.api,
               hint: 'Handled deterministically by migrate-extend',
             })
@@ -63,7 +63,7 @@ module.exports = createPlugin({
               level: 'info',
               auto: 'yes',
               file: ctx.file.path,
-              message: 'Vue.extend(...) (script → defineComponent)',
+              message: 'Vue.extend(...) (script to defineComponent)',
               loc: locOf(p.node),
               hint: 'Handled deterministically by migrate-extend',
             })
@@ -78,7 +78,7 @@ module.exports = createPlugin({
               level: 'info',
               auto: 'yes',
               file: ctx.file.path,
-              message: 'Manual $mount() (script → createApp().mount)',
+              message: 'Manual $mount() (script to createApp().mount)',
               loc: locOf(p.node),
               hint: 'Handled deterministically by migrate-mount',
             })

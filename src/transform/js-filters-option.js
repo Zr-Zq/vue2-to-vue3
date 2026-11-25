@@ -1,5 +1,5 @@
 /**
- * options.filters → merge into methods (Vue3 has no filters).
+ * options.filters to merge into methods (Vue3 has no filters).
  * Template | is already rewritten to calls by html-filters.
  *
  * Collision policy:

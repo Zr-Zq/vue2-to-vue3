@@ -224,7 +224,7 @@ function ensureMainRegistersBus(projectRoot, ledger) {
 
 const plugin = createPlugin({
   name: 'migrate-instance-events',
-  description: 'this.$on/$off/$once → this.$bus.*; ensure compat/v23-bus.js + main register',
+  description: 'this.$on/$off/$once to this.$bus.*; ensure compat/v23-bus.js + main register',
   version: '0.1.0',
   defaults: { enabled: true, stream: 'js' },
   match(ctx, api) {
@@ -248,7 +248,7 @@ const plugin = createPlugin({
             who: 'script',
             kind: 'rewrite',
             file: ctx.file.path,
-            detail: 'Rewrote this.' + c.api + ' → this.$bus.' + c.api,
+            detail: 'Rewrote this.' + c.api + ' to this.$bus.' + c.api,
           })
         })
         ctx.report({
@@ -269,7 +269,7 @@ const plugin = createPlugin({
           who: 'script',
           kind: 'rewrite',
           file: ctx.file.path,
-          detail: 'Rewrote this.' + c.api + ' → this.$bus.' + c.api,
+          detail: 'Rewrote this.' + c.api + ' to this.$bus.' + c.api,
         })
       })
       ctx.report({

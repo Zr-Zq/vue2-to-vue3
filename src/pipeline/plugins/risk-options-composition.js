@@ -9,7 +9,7 @@ const {
 } = require('../risk/helpers')
 
 /**
- * Options API → Composition API risk detection (JS stream, runs with HTML risks).
+ * Options API to Composition API risk detection (JS stream, runs with HTML risks).
  * Safe path is rewritten by migrate-options-composition first; this plugin flags leftovers
  * (watch complexity, $options, tree APIs, unresolved mixins, etc.).
  * risk-annotate inserts AI-TODO for auto!=='yes'.
@@ -19,73 +19,73 @@ const OPTION_MAP = {
   data: {
     id: 'composition.data',
     level: 'warn',
-    message: 'data() → ref/reactive; template/this bindings become .value or reactive fields',
+    message: 'data() to ref/reactive; template/this bindings become .value or reactive fields',
     hint: 'Prefer reactive for objects; ref for primitives; unwrap carefully in setup return / script setup',
   },
   computed: {
     id: 'composition.computed',
     level: 'warn',
-    message: 'computed → computed(); getter/setter must keep this-scope via closure over refs',
+    message: 'computed to computed(); getter/setter must keep this-scope via closure over refs',
     hint: 'Map get/set pairs; avoid reading unset refs before init order is fixed',
   },
   methods: {
     id: 'composition.methods',
     level: 'warn',
-    message: 'methods → plain functions in setup; this.xxx becomes local bindings',
+    message: 'methods to plain functions in setup; this.xxx becomes local bindings',
     hint: 'Watch closures capturing stale refs; keep event handlers stable when passed as props',
   },
   watch: {
     id: 'composition.watch',
     level: 'warn',
-    message: 'watch options → watch()/watchEffect(); string handlers and deep/immediate need remapping',
+    message: 'watch options to watch()/watchEffect(); string handlers and deep/immediate need remapping',
     hint: 'String handler names become function refs; deep on reactive objects differs from Vue2',
   },
   mixins: {
     id: 'composition.mixins',
     level: 'block',
-    message: 'mixins → composable functions; merge order and this injection change',
+    message: 'mixins to composable functions; merge order and this injection change',
     hint: 'Extract shared state/lifecycle into useXxx(); resolve name collisions explicitly',
   },
   filters: {
     id: 'composition.filters',
     level: 'warn',
     message: 'filters option has no Composition equivalent; use methods/plain functions',
-    hint: 'After HTML |filter→call, keep functions imported or defined in setup',
+    hint: 'After HTML |filtertocall, keep functions imported or defined in setup',
   },
   provide: {
     id: 'composition.provide',
     level: 'warn',
-    message: 'provide → provide(); primitives need ref/reactive for consumers to stay live',
+    message: 'provide to provide(); primitives need ref/reactive for consumers to stay live',
     hint: 'Align with inject() keys (string/Symbol); prefer readonly() when exposing state',
   },
   inject: {
     id: 'composition.inject',
     level: 'warn',
-    message: 'inject → inject(); default factory and reactivity differ from Options',
+    message: 'inject to inject(); default factory and reactivity differ from Options',
     hint: 'Defaults: inject(key, default) or inject(key, () => default, true)',
   },
   props: {
     id: 'composition.props',
     level: 'info',
-    message: 'props → defineProps(); do not destructure without toRefs/toRef if reactivity needed',
+    message: 'props to defineProps(); do not destructure without toRefs/toRef if reactivity needed',
     hint: 'emit via defineEmits; declare emits for fallthrough clarity',
   },
   components: {
     id: 'composition.components',
     level: 'info',
-    message: 'components map → import in script setup (auto-available) or components: in setup()',
+    message: 'components map to import in script setup (auto-available) or components: in setup()',
     hint: 'Async components: defineAsyncComponent',
   },
   directives: {
     id: 'composition.directives',
     level: 'warn',
-    message: 'directives → directive hooks in script setup (vName) or app.directive',
+    message: 'directives to directive hooks in script setup (vName) or app.directive',
     hint: 'Hook names already migrate; registration site moves with Composition',
   },
   model: {
     id: 'composition.model',
     level: 'warn',
-    message: 'model: { prop, event } → defineModel() / v-model args in Vue3',
+    message: 'model: { prop, event } to defineModel() / v-model args in Vue3',
     hint: 'Custom v-model prop/event pair must become modelValue or named v-model',
   },
   inheritAttrs: {
@@ -97,7 +97,7 @@ const OPTION_MAP = {
   render: {
     id: 'composition.render',
     level: 'warn',
-    message: 'render(h) with Options this → h import + setup state; or prefer template',
+    message: 'render(h) with Options this to h import + setup state; or prefer template',
     hint: 'Slots: useSlots(); scoped slot props no longer on this',
   },
   setup: {
@@ -118,73 +118,73 @@ const LIFECYCLE = {
   created: {
     id: 'composition.created',
     level: 'warn',
-    message: 'created → sync code at top of setup / onBeforeMount for DOM-free init',
+    message: 'created to sync code at top of setup / onBeforeMount for DOM-free init',
     hint: 'Data from created that Options assumed ready must be initialized before return',
   },
   beforeMount: {
     id: 'composition.beforeMount',
     level: 'info',
-    message: 'beforeMount → onBeforeMount',
+    message: 'beforeMount to onBeforeMount',
     hint: '',
   },
   mounted: {
     id: 'composition.mounted',
     level: 'info',
-    message: 'mounted → onMounted; $refs only safe inside/after',
+    message: 'mounted to onMounted; $refs only safe inside/after',
     hint: '',
   },
   beforeUpdate: {
     id: 'composition.beforeUpdate',
     level: 'info',
-    message: 'beforeUpdate → onBeforeUpdate',
+    message: 'beforeUpdate to onBeforeUpdate',
     hint: '',
   },
   updated: {
     id: 'composition.updated',
     level: 'info',
-    message: 'updated → onUpdated',
+    message: 'updated to onUpdated',
     hint: '',
   },
   activated: {
     id: 'composition.activated',
     level: 'info',
-    message: 'activated → onActivated (keep-alive)',
+    message: 'activated to onActivated (keep-alive)',
     hint: '',
   },
   deactivated: {
     id: 'composition.deactivated',
     level: 'info',
-    message: 'deactivated → onDeactivated (keep-alive)',
+    message: 'deactivated to onDeactivated (keep-alive)',
     hint: '',
   },
   beforeDestroy: {
     id: 'composition.beforeUnmount',
     level: 'warn',
-    message: 'beforeDestroy → onBeforeUnmount (name already rewritten by migrate-api-compat)',
+    message: 'beforeDestroy to onBeforeUnmount (name already rewritten by migrate-api-compat)',
     hint: 'Clear timers/listeners in onBeforeUnmount',
   },
   destroyed: {
     id: 'composition.unmounted',
     level: 'warn',
-    message: 'destroyed → onUnmounted',
+    message: 'destroyed to onUnmounted',
     hint: '',
   },
   beforeUnmount: {
     id: 'composition.beforeUnmount',
     level: 'info',
-    message: 'beforeUnmount → onBeforeUnmount',
+    message: 'beforeUnmount to onBeforeUnmount',
     hint: '',
   },
   unmounted: {
     id: 'composition.unmounted',
     level: 'info',
-    message: 'unmounted → onUnmounted',
+    message: 'unmounted to onUnmounted',
     hint: '',
   },
   errorCaptured: {
     id: 'composition.errorCaptured',
     level: 'warn',
-    message: 'errorCaptured → onErrorCaptured',
+    message: 'errorCaptured to onErrorCaptured',
     hint: '',
   },
 }
@@ -271,7 +271,7 @@ module.exports = createPlugin({
         return
       }
       // Options intentionally kept (imported mixins / extends): one header AI-TODO is enough;
-      // per-option "→ ref/computed" hints would be noise for valid Vue3 Options code.
+      // per-option "to ref/computed" hints would be noise for valid Vue3 Options code.
       if (/AI-TODO:\s*\[options-to-composition\]\s*kept Options API/.test(script.code || '')) {
         return
       }
@@ -358,7 +358,7 @@ module.exports = createPlugin({
                   message:
                     'String watch handler "' +
                     wp.value.value +
-                    '" → pass function reference in watch()',
+                    '" to pass function reference in watch()',
                   loc: locOf(wp),
                   evidence: String(optionKeyName(wp) || '') + ': \'' + wp.value.value + '\'',
                   hint: 'watch(source, handlerFn) — handler must be in scope',
@@ -379,7 +379,7 @@ module.exports = createPlugin({
                   level: 'warn',
                   auto: 'no',
                   file: ctx.file.path,
-                  message: 'watch.handler string → function reference in Composition watch()',
+                  message: 'watch.handler string to function reference in Composition watch()',
                   loc: locOf(wp),
                   evidence: optionKeyName(wp) || 'watch',
                   hint: 'Inline handler or const fn in setup',
@@ -404,21 +404,21 @@ module.exports = createPlugin({
           if (!SPECIAL_THIS.has(head)) return
           // $parent/$root/$children already covered by risk-instance-api; still flag composition mapping
           const compositionHint = {
-            $refs: 'this.$refs.x → const x = ref(null) + template ref="x"',
-            $emit: 'this.$emit → const emit = defineEmits([...]); emit(...)',
-            $nextTick: 'this.$nextTick → import { nextTick } from "vue"',
-            $watch: 'this.$watch → watch()',
-            $set: 'this.$set → direct assignment (Vue3) / reactive',
-            $delete: 'this.$delete → delete obj.key',
-            $slots: 'this.$slots → useSlots()',
-            $scopedSlots: 'this.$scopedSlots → useSlots() (Vue3)',
-            $attrs: 'this.$attrs → useAttrs()',
-            $listeners: 'this.$listeners merged into attrs in Vue3 → useAttrs()',
+            $refs: 'this.$refs.x to const x = ref(null) + template ref="x"',
+            $emit: 'this.$emit to const emit = defineEmits([...]); emit(...)',
+            $nextTick: 'this.$nextTick to import { nextTick } from "vue"',
+            $watch: 'this.$watch to watch()',
+            $set: 'this.$set to direct assignment (Vue3) / reactive',
+            $delete: 'this.$delete to delete obj.key',
+            $slots: 'this.$slots to useSlots()',
+            $scopedSlots: 'this.$scopedSlots to useSlots() (Vue3)',
+            $attrs: 'this.$attrs to useAttrs()',
+            $listeners: 'this.$listeners merged into attrs in Vue3 to useAttrs()',
             $options: 'this.$options has no full Composition equivalent; redesign',
-            $parent: 'this.$parent → provide/inject or explicit props/emits',
-            $root: 'this.$root → app-level provide or pinia/store',
-            $children: 'this.$children removed → template refs / provide',
-            $el: 'this.$el → root element ref',
+            $parent: 'this.$parent to provide/inject or explicit props/emits',
+            $root: 'this.$root to app-level provide or pinia/store',
+            $children: 'this.$children removed to template refs / provide',
+            $el: 'this.$el to root element ref',
           }
           pushRisk(api.project, {
             id: 'composition.this.' + head,

@@ -100,7 +100,7 @@ function renderHtmlReport(graph) {
 </head>
 <body>
 <header>
-  <h1>Vue2→Vue3 Preflight · ${escapeHtml(graph.meta.packageName || '')}</h1>
+  <h1>Vue2toVue3 Preflight · ${escapeHtml(graph.meta.packageName || '')}</h1>
   <p>${escapeHtml(graph.meta.projectRoot || '')} · ${escapeHtml(graph.meta.analyzedAt || '')}</p>
   <div class="stats" id="stats"></div>
 </header>
@@ -164,7 +164,7 @@ function renderOverview() {
     <div class="panel-card">
       <h3>Notes</h3>
       <p class="muted">This report records: (1) import graph; (2) scope tree; (3) global register/mutation sites (not call sites);
-      (4) Mixins (Vue.mixin / mixins:[] → source file → methods/data member reverse lookup).
+      (4) Mixins (Vue.mixin / mixins:[] to source file to methods/data member reverse lookup).
       The symbol lookup page finds global regs and mixin injection sources by name in one query.</p>
     </div>
     <div class="split">
@@ -469,7 +469,7 @@ function renderCycles() {
       <h3>Cycle SCCs (\${cycles.length}）</h3>
       \${cycles.length ? cycles.map((c,i) =>
         '<div style="margin-bottom:12px"><span class="tag danger">#'+(i+1)+'</span> '
-        + c.map(f => '<a class="file-link mono" data-file="'+esc(f)+'">'+esc(f)+'</a>').join(' → ')
+        + c.map(f => '<a class="file-link mono" data-file="'+esc(f)+'">'+esc(f)+'</a>').join(' to ')
         + '</div>'
       ).join('') : '<p class="muted">No circular dependencies detected</p>'}
     </div>\`;

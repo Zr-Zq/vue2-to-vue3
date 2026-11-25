@@ -13,8 +13,8 @@ function renamesFromChanges(changes) {
 }
 
 /**
- * Options API → <script setup> (no defineComponent).
- * $parent/$children/$root → AI-TODO only (not rewritten).
+ * Options API to <script setup> (no defineComponent).
+ * $parent/$children/$root to AI-TODO only (not rewritten).
  */
 
 /** Turn the opening <script> that owns contentStart into <script setup …>. */
@@ -28,14 +28,14 @@ function promoteScriptOpenTag(vueSource, contentStartOffset) {
   if (close === -1) return vueSource
   const tag = after.slice(0, close + 1)
   if (/\bsetup\b/i.test(tag)) return vueSource
-  // <script> or <script lang="ts"> → insert setup
+  // <script> or <script lang="ts"> to insert setup
   const promoted = tag.replace(/^<script/i, '<script setup')
   return String(vueSource).slice(0, idx) + promoted + String(vueSource).slice(idx + tag.length)
 }
 
 module.exports = createPlugin({
   name: 'migrate-options-composition',
-  description: 'Options → <script setup> (ref/computed/watch/lifecycle); track this bind/call',
+  description: 'Options to <script setup> (ref/computed/watch/lifecycle); track this bind/call',
   version: '0.2.0',
   defaults: { enabled: true, stream: 'js' },
   match(ctx, api) {
@@ -88,7 +88,7 @@ module.exports = createPlugin({
         ctx.report({
           level: 'info',
           plugin: 'migrate-options-composition',
-          message: 'options plain .js/.ts → AI-TODO only (preserve export default)',
+          message: 'options plain .js/.ts to AI-TODO only (preserve export default)',
         })
       }
       return
@@ -109,7 +109,7 @@ module.exports = createPlugin({
       ctx.report({
         level: 'info',
         plugin: 'migrate-options-composition',
-        message: 'kept Options API (imported mixins / extends) → AI-TODO only',
+        message: 'kept Options API (imported mixins / extends) to AI-TODO only',
       })
       return
     }
@@ -136,7 +136,7 @@ module.exports = createPlugin({
       ctx.report({
         level: 'info',
         plugin: 'migrate-options-composition',
-        message: 'options→script-setup changes ×' + result.changes.length,
+        message: 'optionstoscript-setup changes ×' + result.changes.length,
       })
     }
   },

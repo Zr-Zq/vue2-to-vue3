@@ -1,12 +1,12 @@
 /**
- * Vue2 async component factories → Vue3 defineAsyncComponent.
+ * Vue2 async component factories to Vue3 defineAsyncComponent.
  *
  * In scope (deterministic):
  * - () => import('…')
  * - () => ({ component: import('…'), loading, error, delay, timeout })
  * - Vue.component('Name', () => import('…'))  (factory only; Vue.component left for other plugins)
  *
- * Out of scope: custom Promise factories / non-import loaders → leave + optional note.
+ * Out of scope: custom Promise factories / non-import loaders to leave + optional note.
  * Route records (`{ path, component: () => import() }`) are skipped: Vue Router 4 wants plain loaders.
  */
 const parser = require('@babel/parser')
@@ -126,7 +126,7 @@ function wrapDefineAsync(argNode) {
 }
 
 /**
- * Convert a Vue2 async factory node → defineAsyncComponent(...) AST, or null if not matched.
+ * Convert a Vue2 async factory node to defineAsyncComponent(...) AST, or null if not matched.
  * Used by options-to-composition when hoisting components.
  */
 function toDefineAsyncComponent(node) {
@@ -224,7 +224,7 @@ function rewriteFactoryPath(path, changes) {
     const imp = getImportFromFactory(node)
     if (!imp) return
     path.replaceWith(wrapDefineAsync(t.arrowFunctionExpression([], t.cloneNode(imp, true))))
-    changes.push({ kind: 'async-import-factory', note: '() => import() → defineAsyncComponent' })
+    changes.push({ kind: 'async-import-factory', note: '() => import() to defineAsyncComponent' })
     return
   }
 
@@ -244,7 +244,7 @@ function rewriteFactoryPath(path, changes) {
     path.replaceWith(wrapDefineAsync(mapped))
     changes.push({
       kind: 'async-options-factory',
-      note: 'component/loading/error → loader/loadingComponent/errorComponent',
+      note: 'component/loading/error to loader/loadingComponent/errorComponent',
     })
   }
 }

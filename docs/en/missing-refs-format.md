@@ -119,7 +119,7 @@ When the underlying tool runs with `--json` and fails, stdout looks like:
 }
 ```
 
-Chinese key → English key mapping:
+Chinese key to English key mapping:
 
 | Chinese key | English key |
 |-------------|-------------|

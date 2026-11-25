@@ -1,5 +1,5 @@
 /**
- * Unit tests for Options → Composition + this rebinding
+ * Unit tests for Options to Composition + this rebinding
  *   node test/options-composition.test.js
  */
 const assert = require('assert')
@@ -11,7 +11,7 @@ function ok(cond, msg) {
   console.log('  ok:', msg)
 }
 
-console.log('== data → ref + drop this ==')
+console.log('== data to ref + drop this ==')
 {
   const r = migrateOptionsToComposition(
     `export default {
@@ -22,10 +22,10 @@ console.log('== data → ref + drop this ==')
       mounted() { this.inc() }
     }`
   )
-  ok(/const count = ref\(0\)/.test(r.code), 'data → ref(0)')
-  ok(/count\.value \+= 1/.test(r.code), 'this.count → count.value')
-  ok(/function inc\(/.test(r.code), 'method → function')
-  ok(/onMounted\(/.test(r.code), 'mounted → onMounted')
+  ok(/const count = ref\(0\)/.test(r.code), 'data to ref(0)')
+  ok(/count\.value \+= 1/.test(r.code), 'this.count to count.value')
+  ok(/function inc\(/.test(r.code), 'method to function')
+  ok(/onMounted\(/.test(r.code), 'mounted to onMounted')
   ok(/\/\* v23:composition \*\//.test(r.code), 'composition marker')
   ok(!/this\.count/.test(r.code), 'no this.count left')
   ok(!/defineComponent/.test(r.code), 'no defineComponent')
@@ -64,9 +64,9 @@ console.log('== official $emit / $nextTick / $refs ==')
       }
     }`
   )
-  ok(/nextTick\(/.test(r.code), '$nextTick → nextTick')
-  ok(/box\.value\.focus\(/.test(r.code), '$refs.box → box.value')
-  ok(/\bemit\('done'/.test(r.code), '$emit → emit')
+  ok(/nextTick\(/.test(r.code), '$nextTick to nextTick')
+  ok(/box\.value\.focus\(/.test(r.code), '$refs.box to box.value')
+  ok(/\bemit\('done'/.test(r.code), '$emit to emit')
   ok(/defineEmits\(/.test(r.code), 'defineEmits')
   ok(/const emit = defineEmits/.test(r.code), 'const emit = defineEmits')
   ok(!/this\.\$emit/.test(r.code), 'no this.$emit')
@@ -85,9 +85,9 @@ console.log('== $parent/$root proxy; $children AI ==')
       }
     }`
   )
-  ok(/__v23Proxy\s*\?\.\s*\$parent/.test(r.code), '$parent → proxy')
+  ok(/__v23Proxy\s*\?\.\s*\$parent/.test(r.code), '$parent to proxy')
   ok(/this\.\$children/.test(r.code), '$children left')
-  ok(/__v23Proxy\s*\?\.\s*\$root/.test(r.code), '$root → proxy')
+  ok(/__v23Proxy\s*\?\.\s*\$root/.test(r.code), '$root to proxy')
   ok(/AI-TODO: \[instance-api\].*\$children/.test(r.code), 'AI-TODO $children')
   ok(!/defineEmits\(/.test(r.code), '$root.$emit does not force defineEmits')
   ok(r.changes.some((c) => c.kind === 'ai-instance-tree'), 'ai-instance-tree change')
@@ -217,8 +217,8 @@ console.log('== computed + props ==')
     }`
   )
   ok(/computed\(/.test(r.code), 'computed()')
-  ok(/props\.label/.test(r.code), 'this.label → props.label')
-  ok(/n\.value/.test(r.code), 'this.n → n.value')
+  ok(/props\.label/.test(r.code), 'this.label to props.label')
+  ok(/n\.value/.test(r.code), 'this.n to n.value')
   ok(/defineProps\(/.test(r.code), 'defineProps')
 }
 
@@ -239,7 +239,7 @@ console.log('== created inlined into setup ==')
     }`
   )
   ok(/ready\.value = true/.test(r.code), 'created body inlined')
-  ok(!/onBeforeMount/.test(r.code) || r.changes.some((c) => c.to === 'setup-inline'), 'created → setup-inline')
+  ok(!/onBeforeMount/.test(r.code) || r.changes.some((c) => c.to === 'setup-inline'), 'created to setup-inline')
 }
 
 console.log('== beforeCreate folded into setup + lifecycle fill ==')
@@ -264,11 +264,11 @@ console.log('== beforeCreate folded into setup + lifecycle fill ==')
   ok(/const __v23Self = \{\}/.test(r.code), 'self object declared')
   ok(/__v23Self\._bc = true/.test(r.code) && /!!__v23Self\._bc/.test(r.code), 'custom _bc shared via __v23Self')
   ok(!/this\._bc/.test(r.code), 'no leftover this._bc')
-  ok(/onBeforeUpdate\(/.test(r.code), 'beforeUpdate → onBeforeUpdate')
-  ok(/onUpdated\(/.test(r.code), 'updated → onUpdated')
-  ok(/onActivated\(/.test(r.code), 'activated → onActivated')
-  ok(/onDeactivated\(/.test(r.code), 'deactivated → onDeactivated')
-  ok(/onErrorCaptured\(/.test(r.code), 'errorCaptured → onErrorCaptured')
+  ok(/onBeforeUpdate\(/.test(r.code), 'beforeUpdate to onBeforeUpdate')
+  ok(/onUpdated\(/.test(r.code), 'updated to onUpdated')
+  ok(/onActivated\(/.test(r.code), 'activated to onActivated')
+  ok(/onDeactivated\(/.test(r.code), 'deactivated to onDeactivated')
+  ok(/onErrorCaptured\(/.test(r.code), 'errorCaptured to onErrorCaptured')
   ok(r.changes.some((c) => c.kind === 'lifecycle' && c.from === 'beforeCreate'), 'beforeCreate inline change')
 }
 
@@ -320,7 +320,7 @@ console.log('== watch / provide / inject ==')
   ok(/deep:\s*true/.test(r.code), 'watch deep')
   ok(/immediate:\s*true/.test(r.code), 'watch immediate')
   ok(/provide\(['"]count['"],\s*count\)/.test(r.code), 'provide ref')
-  ok(/provide\(['"]flag['"],\s*ref\(1\)\)/.test(r.code), 'provide primitive → ref')
+  ok(/provide\(['"]flag['"],\s*ref\(1\)\)/.test(r.code), 'provide primitive to ref')
   ok(/const theme = inject\(/.test(r.code), 'inject top-level (script setup)')
 }
 
@@ -341,8 +341,8 @@ console.log('== filters remnant + inheritAttrs + model AI ==')
     }`
   )
   ok(/defineOptions\(/.test(r.code) && /inheritAttrs:\s*false/.test(r.code), 'defineOptions inheritAttrs')
-  ok(/const vFocus =/.test(r.code), 'directive → vFocus')
-  ok(/function upper\(/.test(r.code), 'filters → method in setup')
+  ok(/const vFocus =/.test(r.code), 'directive to vFocus')
+  ok(/function upper\(/.test(r.code), 'filters to method in setup')
   ok(/AI-TODO: \[options-to-composition\] options\.model/.test(r.code), 'model AI')
 }
 
@@ -374,23 +374,23 @@ console.log('== this.$refs/$el AI + $data/$props/$createElement/$vnode/$options/
 
   const r = migrateOptionsToComposition(src)
   ok(/v23:this-underscore/.test(r.code), 'underscore comment')
-  // _myFlag not in data() here — custom instance field → __v23Self._myFlag
-  ok(/__v23Self\._myFlag/.test(r.code) && !/this\._myFlag/.test(r.code), 'custom _xxx not in data → __v23Self')
+  // _myFlag not in data() here — custom instance field to __v23Self._myFlag
+  ok(/__v23Self\._myFlag/.test(r.code) && !/this\._myFlag/.test(r.code), 'custom _xxx not in data to __v23Self')
   ok(/this\._uid/.test(r.code), 'internal _uid left as-is')
-  ok(/__v23Proxy\s*\?\.\s*\$refs/.test(r.code), 'bare $refs → __v23Proxy?.$refs')
+  ok(/__v23Proxy\s*\?\.\s*\$refs/.test(r.code), 'bare $refs to __v23Proxy?.$refs')
   ok(!/AI-TODO: \[options-to-composition\] bare this\.\$refs/.test(r.code), 'no bare $refs AI-TODO')
   ok(!/v23Refs/.test(r.code), 'no v23Refs bag')
-  ok(/box\.value\.focus/.test(r.code), '$refs.box still → box.value')
-  ok(/__v23Proxy\s*\?\.\s*\$el/.test(r.code), '$el → __v23Proxy?.$el')
+  ok(/box\.value\.focus/.test(r.code), '$refs.box still to box.value')
+  ok(/__v23Proxy\s*\?\.\s*\$el/.test(r.code), '$el to __v23Proxy?.$el')
   ok(/const __v23Proxy = getCurrentInstance\(\)\s*\?\.\s*proxy/.test(r.code), 'setup captures proxy')
   ok(!/AI-TODO: \[options-to-composition\] this\.\$el/.test(r.code), 'no $el AI-TODO')
   ok(!/\bthis\.\$el\b/.test(r.code.replace(/\/\*[\s\S]*?\*\//g, '')), 'no leftover this.$el in code')
   ok(!/rootEl/.test(r.code), 'no auto rootEl')
-  ok(/v23Data/.test(r.code) && /get n\(/.test(r.code), '$data → v23Data')
-  ok(/props\.title/.test(r.code), '$props.title → props.title')
-  ok(/\bh\b/.test(r.code) && /from "vue"/.test(r.code), '$createElement → h import')
-  ok(/__v23Proxy\?\.\$\.vnode/.test(r.code), '$vnode → __v23Proxy?.$.vnode')
-  ok(/__v23Proxy\s*\?\.\s*\$options/.test(r.code), '$options → proxy')
+  ok(/v23Data/.test(r.code) && /get n\(/.test(r.code), '$data to v23Data')
+  ok(/props\.title/.test(r.code), '$props.title to props.title')
+  ok(/\bh\b/.test(r.code) && /from "vue"/.test(r.code), '$createElement to h import')
+  ok(/__v23Proxy\?\.\$\.vnode/.test(r.code), '$vnode to __v23Proxy?.$.vnode')
+  ok(/__v23Proxy\s*\?\.\s*\$options/.test(r.code), '$options to proxy')
   ok(/defineExpose\(/.test(r.code), 'defineExpose emitted')
 }
 
@@ -415,17 +415,17 @@ console.log('== $forceUpdate / $destroy / $isServer / $ssrContext / emit names /
       renderTriggered() {}
     }`
   )
-  ok(/__v23Proxy\?\.\$forceUpdate/.test(r.code), '$forceUpdate → __v23Proxy?.$forceUpdate')
-  ok(/__v23Proxy\?\.\$\.appContext\.app\.unmount/.test(r.code), '$destroy → app.unmount via proxy')
+  ok(/__v23Proxy\?\.\$forceUpdate/.test(r.code), '$forceUpdate to __v23Proxy?.$forceUpdate')
+  ok(/__v23Proxy\?\.\$\.appContext\.app\.unmount/.test(r.code), '$destroy to app.unmount via proxy')
   ok(!/getCurrentInstance\(\)\.(proxy|appContext)/.test(r.code), 'no getCurrentInstance() inside methods')
-  ok(/import\.meta\.env\.SSR/.test(r.code), '$isServer → import.meta.env.SSR')
+  ok(/import\.meta\.env\.SSR/.test(r.code), '$isServer to import.meta.env.SSR')
   ok(/const __v23SsrContext = import\.meta\.env\.SSR \? useSSRContext\(\) : undefined/.test(r.code), '$ssrContext captured in setup')
   ok(/const ctx = __v23SsrContext/.test(r.code), '$ssrContext read via captured binding')
   ok(/defineEmits\(\[\s*["']save["']\s*,\s*["']done["']\s*\]\)/.test(r.code) ||
     (/defineEmits\(/.test(r.code) && /save/.test(r.code) && /done/.test(r.code)), 'defineEmits event names')
-  ok(/onServerPrefetch\(/.test(r.code), 'serverPrefetch → onServerPrefetch')
-  ok(/onRenderTracked\(/.test(r.code), 'renderTracked → onRenderTracked')
-  ok(/onRenderTriggered\(/.test(r.code), 'renderTriggered → onRenderTriggered')
+  ok(/onServerPrefetch\(/.test(r.code), 'serverPrefetch to onServerPrefetch')
+  ok(/onRenderTracked\(/.test(r.code), 'renderTracked to onRenderTracked')
+  ok(/onRenderTriggered\(/.test(r.code), 'renderTriggered to onRenderTriggered')
 }
 
 console.log('== edge: $forceUpdate / $destroy child vs root AI note ==')
@@ -440,7 +440,7 @@ console.log('== edge: $forceUpdate / $destroy child vs root AI note ==')
     }`
   )
   ok(/__v23Proxy\?\.\$forceUpdate\(\)/.test(r.code), 'forceUpdate via proxy')
-  ok(/appContext\.app\.unmount/.test(r.code), 'destroy → app.unmount')
+  ok(/appContext\.app\.unmount/.test(r.code), 'destroy to app.unmount')
   ok(
     /root-oriented|child|v-if|AI-TODO: \[options-to-composition\] this\.\$destroy/.test(r.code),
     'destroy AI note present for child self-destroy risk'
@@ -450,7 +450,7 @@ console.log('== edge: $forceUpdate / $destroy child vs root AI note ==')
   ok(!/this\.\$forceUpdate\s*\(/.test(r.code), 'no leftover this.$forceUpdate()')
 }
 
-console.log('== $options.methods → AI-TODO (gone in script setup) ==')
+console.log('== $options.methods to AI-TODO (gone in script setup) ==')
 {
   const r = migrateOptionsToComposition(
     `export default {
@@ -463,7 +463,7 @@ console.log('== $options.methods → AI-TODO (gone in script setup) ==')
   ok(/AI-TODO: \[options-to-composition\] this\.\$options\.methods is undefined in script setup/.test(r.code), 'AI-TODO for $options.methods')
 }
 
-console.log('== edge: $data._xxx vs this._xxx (data underscore → ref; internals stay) ==')
+console.log('== edge: $data._xxx vs this._xxx (data underscore to ref; internals stay) ==')
 {
   const r = migrateOptionsToComposition(
     `export default {
@@ -480,11 +480,11 @@ console.log('== edge: $data._xxx vs this._xxx (data underscore → ref; internal
   )
   ok(/v23Data/.test(r.code), '$data bag emitted')
   ok(/_myFlag/.test(r.code), '_myFlag kept in output')
-  // data _myFlag: this._myFlag → ref binding (align with $data); Vue2 did not proxy it
-  ok(/_myFlag\.value/.test(r.code) || /const _myFlag = ref/.test(r.code), 'this._myFlag → data ref')
+  // data _myFlag: this._myFlag to ref binding (align with $data); Vue2 did not proxy it
+  ok(/_myFlag\.value/.test(r.code) || /const _myFlag = ref/.test(r.code), 'this._myFlag to data ref')
   ok(!/this\._myFlag/.test(r.code), 'no leftover this._myFlag for data key')
   ok(/this\._uid/.test(r.code), 'this._uid (vue-internal) left as-is')
-  ok(/v23Data\._myFlag|get _myFlag\(/.test(r.code), '$data._myFlag → v23Data path')
+  ok(/v23Data\._myFlag|get _myFlag\(/.test(r.code), '$data._myFlag to v23Data path')
   ok(/AI-TODO: \[options-to-composition\] data keys \[\_myFlag\]/.test(r.code), 'AI-TODO data underscore')
 }
 
@@ -504,9 +504,9 @@ console.log('== edge: this.$watch / $attrs / $slots rewrite ==')
       }
     }`
   )
-  ok(/\bwatch\(/.test(r.code) && !/this\.\$watch/.test(r.code), '$watch → watch()')
-  ok(/\battrs\b/.test(r.code) && /useAttrs/.test(r.code) && !/this\.\$attrs/.test(r.code), '$attrs → useAttrs')
-  ok(/\bslots\b/.test(r.code) && /useSlots/.test(r.code) && !/this\.\$slots/.test(r.code), '$slots → useSlots')
+  ok(/\bwatch\(/.test(r.code) && !/this\.\$watch/.test(r.code), '$watch to watch()')
+  ok(/\battrs\b/.test(r.code) && /useAttrs/.test(r.code) && !/this\.\$attrs/.test(r.code), '$attrs to useAttrs')
+  ok(/\bslots\b/.test(r.code) && /useSlots/.test(r.code) && !/this\.\$slots/.test(r.code), '$slots to useSlots')
   ok(/defineOptions\(/.test(r.code) && /inheritAttrs:\s*false/.test(r.code), 'inheritAttrs kept')
 }
 
@@ -555,7 +555,7 @@ console.log('== edge: bind/call/apply with local mixin flatten ==')
       }
     }`
   )
-  // same-file nested mixins recurse: deep → mid → host
+  // same-file nested mixins recurse: deep to mid to host
   ok(/function readX\(/.test(nested.code) || /const readX =/.test(nested.code), 'nested mixin method inlined')
   ok(/ref\(10\)/.test(nested.code) || /x\.value/.test(nested.code), 'nested mixin data inlined')
   ok(/v23:this-rebinding/.test(nested.code), 'rebinding still recorded on nested case')
@@ -575,7 +575,7 @@ console.log('== edge: imported nested mixin still unresolved AI ==')
   ok(/mixins: \[midMx\]/.test(r.code) && !/v23:composition/.test(r.code), 'Options kept')
 }
 
-console.log('== edge: provide primitive → ref + inject AI note ==')
+console.log('== edge: provide primitive to ref + inject AI note ==')
 {
   const r = migrateOptionsToComposition(
     `export default {
@@ -584,13 +584,13 @@ console.log('== edge: provide primitive → ref + inject AI note ==')
       methods: { read() { return this.theme } }
     }`
   )
-  ok(/provide\(['"]theme['"],\s*ref\(['"]dark['"]\)\)/.test(r.code), 'theme primitive → ref')
-  ok(/provide\(['"]count['"],\s*ref\(1\)\)/.test(r.code), 'count primitive → ref')
+  ok(/provide\(['"]theme['"],\s*ref\(['"]dark['"]\)\)/.test(r.code), 'theme primitive to ref')
+  ok(/provide\(['"]count['"],\s*ref\(1\)\)/.test(r.code), 'count primitive to ref')
   ok(/AI-TODO: \[provide-primitive\]/.test(r.code), 'inject-side AI-TODO')
   ok(r.changes.some((c) => c.kind === 'provide-primitive-ref'), 'change recorded')
 }
 
-console.log('== data() shorthand + this.prop → IIFE / props (no TDZ) ==')
+console.log('== data() shorthand + this.prop to IIFE / props (no TDZ) ==')
 {
   const r = migrateOptionsToComposition(`
     export default {
@@ -626,6 +626,26 @@ console.log('== data key same name as import: no duplicate declaration ==')
   ok(decls.length === 0, 'no const navItems redeclaring the import')
   ok(/navItems_1\.value\.length/.test(r.code), 'internal reads use renamed ref')
   ok(r.changes.some((c) => c.kind === 'script-setup-alias-skip'), 'alias skip recorded')
+}
+
+console.log('== const self = this alias (G014) ==')
+{
+  const r = migrateOptionsToComposition(`
+    export default {
+      data() { return { chainLog: '', mode: 'allow' } },
+      mounted() {
+        const self = this
+        const tick = () => {
+          self.chainLog = (self.chainLog || '') + 'B'
+          if (self.mode === 'abort') return
+        }
+        tick()
+      }
+    }
+  `)
+  ok(!/const self = this/.test(r.code), 'self = this removed')
+  ok(/chainLog\.value/.test(r.code) && /mode\.value/.test(r.code), 'self.foo → ref.value')
+  ok(!/\bself\./.test(r.code), 'no leftover self.')
 }
 
 console.log('\nAll options-composition tests passed.')

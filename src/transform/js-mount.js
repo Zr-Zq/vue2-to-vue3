@@ -1,9 +1,9 @@
 /**
  * Deterministic mount-related rewrites:
- * - new Vue({...}).$mount(el) → createApp({...}).use(...).mount(el)
- * - new Vue({...}).$mount() → createApp({...}).mount(document.createElement('div'))
- * - new Ctor({ propsData }) → createApp(Ctor, props)
- * - vm.$mount(el) / vm.$mount() → .mount(...)
+ * - new Vue({...}).$mount(el) to createApp({...}).use(...).mount(el)
+ * - new Vue({...}).$mount() to createApp({...}).mount(document.createElement('div'))
+ * - new Ctor({ propsData }) to createApp(Ctor, props)
+ * - vm.$mount(el) / vm.$mount() to .mount(...)
  */
 
 function ensureCreateAppImport(code) {
@@ -46,7 +46,7 @@ function ensureCreateAppImport(code) {
 }
 
 /**
- * Pull `router` / `store` (shorthand or `router: x`) out of createApp options → `.use(x)`.
+ * Pull `router` / `store` (shorthand or `router: x`) out of createApp options to `.use(x)`.
  * Scope: only these two keys on the options object literal passed to `new Vue({…}).$mount`.
  * Does not touch pinia, i18n, or custom plugins (AI / later plugins).
  */
@@ -123,14 +123,14 @@ function migrateMount(code) {
     }
   )
 
-  // new Vue(Ctor) → createApp(Ctor) (no immediate mount)
+  // new Vue(Ctor) to createApp(Ctor) (no immediate mount)
   out = out.replace(/new\s+Vue\s*\(\s*([A-Za-z_$][\w$]*)\s*\)/g, (full, ctor) => {
     const to = 'createApp(' + ctor + ')'
     changes.push({ kind: 'new-vue-ctor', from: full, to })
     return to
   })
 
-  // new Ctor({ propsData: { ... } }) → createApp(Ctor, { ... })
+  // new Ctor({ propsData: { ... } }) to createApp(Ctor, { ... })
   out = out.replace(
     /new\s+([A-Za-z_$][\w$]*)\s*\(\s*\{\s*propsData\s*:\s*(\{[\s\S]*?\})\s*,?\s*\}\s*\)/g,
     (full, ctor, props) => {
@@ -150,14 +150,14 @@ function migrateMount(code) {
     }
   )
 
-  // xxx.$mount() → xxx.mount(document.createElement('div'))
+  // xxx.$mount() to xxx.mount(document.createElement('div'))
   out = out.replace(/(\b[A-Za-z_$][\w$]*)\s*\.\s*\$mount\s*\(\s*\)/g, (full, id) => {
     const to = id + '.mount(document.createElement("div"))'
     changes.push({ kind: 'dot-mount-empty', from: full, to })
     return to
   })
 
-  // $destroy() → approx: skip if __v23App present; typical vm.$destroy() needs app handle for unmount
+  // $destroy() to approx: skip if __v23App present; typical vm.$destroy() needs app handle for unmount
   // Deterministic: this._x.$destroy() often breaks after mount rewrite; comment no-op / drop call
   out = out.replace(/(\b[A-Za-z_$][\w$.]*)\s*\.\s*\$destroy\s*\(\s*\)/g, (full, id) => {
     // Vue3 component instance has no $destroy; if createApp proxy, keep app and unmount

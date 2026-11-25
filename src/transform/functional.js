@@ -1,16 +1,16 @@
 /**
- * Vue2 functional → Vue3 normal component (official migration path)
+ * Vue2 functional to Vue3 normal component (official migration path)
  * @see https://v3-migration.vuejs.org/breaking-changes/functional-components.html
  *
  * SFC:
- * - <template functional> → <template>
- * - props.x → $props.x; attrs / data.attrs → $attrs
+ * - <template functional> to <template>
+ * - props.x to $props.x; attrs / data.attrs to $attrs
  * - Remove v-on="listeners" (listeners merged into $attrs)
- * - data.staticClass / data.class / data.style → matching $attrs fields or remove
+ * - data.staticClass / data.class / data.style to matching $attrs fields or remove
  * - Remove functional: true
  *
  * JS:
- * - { functional: true, render(h, ctx) } → normal render / or keep render and drop 2nd-arg context (below)
+ * - { functional: true, render(h, ctx) } to normal render / or keep render and drop 2nd-arg context (below)
  */
 
 const traverse = require('@babel/traverse').default
@@ -25,7 +25,7 @@ function rewriteFunctionalTemplateBody(code) {
   const changes = []
   let out = String(code || '')
 
-  // v-on="listeners" / v-on='listeners' → remove ($attrs already includes events)
+  // v-on="listeners" / v-on='listeners' to remove ($attrs already includes events)
   out = out.replace(/\s+v-on\s*=\s*(["'])listeners\1/g, () => {
     changes.push({ kind: 'fn-drop-listeners' })
     return ''
@@ -36,7 +36,7 @@ function rewriteFunctionalTemplateBody(code) {
     return ''
   })
 
-  // v-bind="data.attrs" / v-bind="attrs" → v-bind="$attrs"
+  // v-bind="data.attrs" / v-bind="attrs" to v-bind="$attrs"
   out = out.replace(/\bv-bind\s*=\s*(["'])data\.attrs\1/g, (m, q) => {
     changes.push({ kind: 'fn-data-attrs' })
     return 'v-bind=' + q + '$attrs' + q
@@ -46,7 +46,7 @@ function rewriteFunctionalTemplateBody(code) {
     return 'v-bind=' + q + '$attrs' + q
   })
 
-  // :class="data.staticClass" / data.class → can merge into $attrs; often removed with single-root fallthrough
+  // :class="data.staticClass" / data.class to can merge into $attrs; often removed with single-root fallthrough
   out = out.replace(/\s+:class\s*=\s*(["'])data\.staticClass\1/g, () => {
     changes.push({ kind: 'fn-drop-staticClass' })
     return ''
@@ -60,7 +60,7 @@ function rewriteFunctionalTemplateBody(code) {
     return ' :style=' + q + '$attrs.style' + q
   })
 
-  // props.xxx / props['x'] → $props.xxx (avoid if already $props)
+  // props.xxx / props['x'] to $props.xxx (avoid if already $props)
   out = out.replace(/(^|[^$])\bprops\./g, (m, lead) => {
     changes.push({ kind: 'fn-props-dot' })
     return lead + '$props.'
@@ -76,7 +76,7 @@ function rewriteFunctionalTemplateBody(code) {
     return lead + '$attrs.'
   })
 
-  // slots.default → $slots.default (in template)
+  // slots.default to $slots.default (in template)
   out = out.replace(/(^|[^$])\bslots\./g, (m, lead) => {
     changes.push({ kind: 'fn-slots' })
     return lead + '$slots.'
@@ -164,7 +164,7 @@ function rewriteFunctionalRenderMethod(path, changes) {
 
 function rewriteFunctionalRenderFn(fnNode, changes) {
   // render(h, { props, data, children, listeners, scopedSlots, injections }) 
-  // → render() { const props = this.$props; const data = { attrs: this.$attrs }; ... }
+  // to render() { const props = this.$props; const data = { attrs: this.$attrs }; ... }
   // Simplified: drop 2nd param; insert const bindings at function body start
   const ctxParam = fnNode.params[1]
   fnNode.params = fnNode.params.slice(0, 1) // keep h; migrate-render-h removes it later
@@ -300,7 +300,7 @@ function migrateFunctional(code, filename) {
   }
 
   const jsPart = removeFunctionalOption(out, filename)
-  // removeFunctionalOption whole-file parse fails on .vue → text fallback
+  // removeFunctionalOption whole-file parse fails on .vue to text fallback
   if (jsPart.changes.length) {
     out = jsPart.code
     changes.push(...jsPart.changes)

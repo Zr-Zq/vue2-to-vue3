@@ -10,7 +10,7 @@ function ok(cond, msg) {
 const root = path.resolve('/proj')
 const importer = path.join(root, 'src', 'router', 'index.js')
 
-console.log('== @/ alias + concatenation → import.meta.glob (relative to importer) ==')
+console.log('== @/ alias + concatenation to import.meta.glob (relative to importer) ==')
 {
   const r = migrateDynamicImport(
     `import Layout from '@/layout/index.vue'

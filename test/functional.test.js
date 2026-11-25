@@ -1,5 +1,5 @@
 /**
- * Unit tests: functional → normal component (common official patterns)
+ * Unit tests: functional to normal component (common official patterns)
  *   node test/functional.test.js
  */
 const assert = require('assert')
@@ -64,8 +64,8 @@ console.log('== official SFC sample: props + attrs + listeners ==')
   const r = migrateVue(src)
   ok(/<template>/.test(r.content) || /<template\s*>/.test(r.content), 'strip functional attr')
   ok(!/<template[^>]*\bfunctional\b/i.test(r.content), 'no template functional')
-  ok(/\$props\.level/.test(r.content), 'props → $props')
-  ok(/v-bind="\$attrs"/.test(r.content), 'attrs → $attrs')
+  ok(/\$props\.level/.test(r.content), 'props to $props')
+  ok(/v-bind="\$attrs"/.test(r.content), 'attrs to $attrs')
   ok(!/v-on="listeners"/.test(r.content), 'listeners dropped')
 }
 
@@ -81,7 +81,7 @@ console.log('== LcFunctional style: data.attrs + data.staticClass ==')
   ].join('\n')
   const r = migrateVue(src)
   ok(/\$props\.text/.test(r.content), '$props.text')
-  ok(/v-bind="\$attrs"/.test(r.content), 'data.attrs → $attrs')
+  ok(/v-bind="\$attrs"/.test(r.content), 'data.attrs to $attrs')
   ok(!/data\.staticClass/.test(r.content), 'staticClass dropped')
   ok(!/functional\s*:\s*true/.test(r.content), 'option removed')
   ok(!/v-on="listeners"/.test(r.content), 'no listeners')
@@ -111,7 +111,7 @@ console.log('== props index / slots ==')
   )
   ok(/\$props\['msg'\]/.test(body.code), 'props[]')
   ok(/\$slots\.default/.test(body.code), 'slots')
-  ok(/\$slots\.x/.test(body.code), 'scopedSlots → $slots')
+  ok(/\$slots\.x/.test(body.code), 'scopedSlots to $slots')
 }
 
 console.log('== JS render(h, ctx) functional ==')
@@ -127,7 +127,7 @@ console.log('== JS render(h, ctx) functional ==')
   ].join('\n')
   const r = migrateFunctionalScript(src, 'dyn.js')
   ok(!/functional\s*:\s*true/.test(r.code), 'option gone')
-  ok(/this\.\$props/.test(r.code), 'ctx props → this.$props')
+  ok(/this\.\$props/.test(r.code), 'ctx props to this.$props')
   ok(/render\s*\(\s*h\s*\)/.test(r.code) || /render\s*\(h\)/.test(r.code), 'single h param')
 }
 

@@ -122,7 +122,7 @@ function ingestFiles(options) {
     })
   }
 
-  // Path map: source absolute path → destination absolute path
+  // Path map: source absolute path to destination absolute path
   const pathMap = new Map()
   pairs.forEach((p) => pathMap.set(path.normalize(p.fromAbs), path.normalize(p.toAbs)))
 

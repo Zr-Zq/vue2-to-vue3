@@ -1,8 +1,8 @@
 /**
- * Template filter | → function call (deterministic)
- * {{ a | f }} → {{ f(a) }}
- * {{ a | f(x) | g }} → {{ g(f(a, x)) }}
- * :title="a | f" → :title="f(a)"
+ * Template filter | to function call (deterministic)
+ * {{ a | f }} to {{ f(a) }}
+ * {{ a | f(x) | g }} to {{ g(f(a, x)) }}
+ * :title="a | f" to :title="f(a)"
  *
  * Also merge options.filters into methods (handled by js-filters-option)
  */
@@ -108,7 +108,7 @@ function rewriteBindFilters(code) {
 function rewriteListenersAttr(code) {
   const changes = []
   let out = String(code || '')
-  // v-on="$listeners" → v-bind="$attrs"; if same tag already has v-bind="$attrs", drop v-on
+  // v-on="$listeners" to v-bind="$attrs"; if same tag already has v-bind="$attrs", drop v-on
   out = out.replace(/\s+v-on\s*=\s*(["'])\$listeners\1/g, (m) => {
     changes.push({ kind: 'v-on-listeners-to-attrs' })
     return ' v-bind="$attrs"'

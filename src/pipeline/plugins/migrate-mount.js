@@ -4,7 +4,7 @@ const { applySfcTransforms } = require('../../transform/apply-sfc')
 
 module.exports = createPlugin({
   name: 'migrate-mount',
-  description: 'new Vue().$mount → createApp().mount',
+  description: 'new Vue().$mount to createApp().mount',
   version: '0.1.0',
   defaults: { enabled: true },
   match(ctx, api) {

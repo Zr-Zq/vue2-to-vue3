@@ -1,5 +1,5 @@
 /**
- * Unit tests: Vue2 async factories → defineAsyncComponent
+ * Unit tests: Vue2 async factories to defineAsyncComponent
  *   node test/async-component.test.js
  */
 const assert = require('assert')
@@ -11,7 +11,7 @@ function ok(cond, msg) {
   console.log('  ok:', msg)
 }
 
-console.log('== () => import() → defineAsyncComponent ==')
+console.log('== () => import() to defineAsyncComponent ==')
 {
   const r = migrateAsyncComponent(
     `const routes = [{ component: () => import('./Foo.vue') }]`
@@ -34,9 +34,9 @@ console.log('== object factory loading/error/delay ==')
     })
   `)
   ok(/defineAsyncComponent\(\s*\{/.test(r.code), 'object form')
-  ok(/loader\s*:/.test(r.code), 'component → loader')
-  ok(/loadingComponent\s*:/.test(r.code), 'loading → loadingComponent')
-  ok(/errorComponent\s*:/.test(r.code), 'error → errorComponent')
+  ok(/loader\s*:/.test(r.code), 'component to loader')
+  ok(/loadingComponent\s*:/.test(r.code), 'loading to loadingComponent')
+  ok(/errorComponent\s*:/.test(r.code), 'error to errorComponent')
   ok(/delay\s*:\s*200/.test(r.code), 'delay kept')
   ok(/timeout\s*:\s*3000/.test(r.code), 'timeout kept')
   ok(r.changes.some((c) => c.kind === 'async-options-factory'), 'options factory change')
@@ -70,7 +70,7 @@ console.log('== options composition inlines async component into defineOptions =
   `)
   ok(!/const Foo\b/.test(r.code), 'no script-setup local (defineOptions cannot reference it)')
   ok(/components:\s*\{\s*Foo:\s*defineAsyncComponent/.test(r.code), 'inlined in defineOptions.components')
-  ok(/const n = ref\(1\)/.test(r.code), 'data still → ref')
+  ok(/const n = ref\(1\)/.test(r.code), 'data still to ref')
   ok(r.changes.some((c) => c.kind === 'components-async-inline'), 'async inline change')
 }
 

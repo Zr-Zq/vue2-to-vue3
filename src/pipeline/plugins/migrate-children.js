@@ -4,7 +4,7 @@ const { applySfcTransforms } = require('../../transform/apply-sfc')
 
 module.exports = createPlugin({
   name: 'migrate-children',
-  description: 'this.$children → __v23Children(this) helper',
+  description: 'this.$children to __v23Children(this) helper',
   version: '0.1.0',
   // Disabled by default: $parent/$children/$root are AI-owned (see cannot-fully-auto).
   defaults: { enabled: false },
