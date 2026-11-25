@@ -26,8 +26,12 @@ const STREAMS = {
       'migrate-filters',
       'migrate-extend',
       'migrate-mount',
-      'migrate-children',
+      // migrate-children disabled: $children → AI (same as $parent/$root)
       'migrate-instance-events',
+      'migrate-dynamic-import',
+      // Before options→script-setup so components:{ Foo: () => import() } become defineAsyncComponent then hoist
+      'migrate-async-component',
+      'migrate-options-composition',
     ],
   },
 }

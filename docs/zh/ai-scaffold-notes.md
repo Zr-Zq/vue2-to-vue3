@@ -28,9 +28,9 @@ AI 建底座必须达到下列程度，不能只剩空壳：
 |------|------|
 | 根目录有 `package.json`（最好还有 `vite.config.*` 与 `jsconfig.json` / `tsconfig.json`） | `looksLikeProject(--to)` 必须为真，否则 migrate 会停在「等 AI 底座」 |
 | 默认应用树在 **`src/`**（与源 `--src` / `--dest-src` 一致） | 脚本 copy 按相对路径；怪异布局要额外参数 |
-| 别名 **`@` → `src`**（源用过 `~` 则一并）；`jsconfig`/`tsconfig` paths 与 Vite 一致 | `ingest` / `rewrite-imports` 按**底座** alias 解析改写 |
+| 别名 **`@` → `src`**（源用过 `~` 则一并）；`jsconfig`/`tsconfig` paths 与 Vite 一致 | `ingest` / `rewrite-imports` 按**底座** alias 解析改写；**保留 `.vue` 后缀**（Vite）；ingest 一并拷贝样式/资源（scss/css/图片/字体），不只 SFC/JS |
 | 根级工程文件只由 AI 准备（env、Vite、package.json、lint…） | 脚本**不**迁 env/工程配置——底座里必须已正确 |
-| 桩 `src/main.js` / router 可被 copy **覆盖** | 不要做成脚本无法叠上去的布局 |
+| 桩 `src/main.js` / router 可被 copy **覆盖** | 不要做成脚本无法叠上去的布局。被拷进来的 Vue2 `router/index.js`、layout 由流水线迁移（`router` 插件 → Vue Router 4，`migrate-dynamic-import` → `import.meta.glob`），**不要**手工还原底座版本 |
 | 不把缺依赖、缺 alias、缺 proxy 留给脚本 | 交接 = AI 做完 → 脚本 copy+pipeline → 仅语法/语义 AI-TODO |
 
 若源不是 `src` 根，用匹配的 `--dest-src` 并在 `.v23/scaffold-notes.md` 写明；默认仍为 `src/`。

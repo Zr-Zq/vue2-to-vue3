@@ -3,6 +3,7 @@ const less = require('./less')
 const typescript = require('./typescript')
 const vuex = require('./vuex')
 const router = require('./router')
+const i18n = require('./i18n')
 const element = require('./element')
 
 const riskInstanceApi = require('./risk-instance-api')
@@ -15,6 +16,7 @@ const riskKeepaliveCombo = require('./risk-keepalive-combo')
 const riskProvidePrimitive = require('./risk-provide-primitive')
 const riskGlobalsExtend = require('./risk-globals-extend')
 const riskMixinCollision = require('./risk-mixin-collision')
+const riskOptionsComposition = require('./risk-options-composition')
 const riskAnnotate = require('./risk-annotate')
 const riskSummary = require('./risk-summary')
 
@@ -29,6 +31,9 @@ const migrateMount = require('./migrate-mount')
 const migrateExtend = require('./migrate-extend')
 const migrateChildren = require('./migrate-children')
 const migrateInstanceEvents = require('./migrate-instance-events')
+const migrateDynamicImport = require('./migrate-dynamic-import')
+const migrateAsyncComponent = require('./migrate-async-component')
+const migrateOptionsComposition = require('./migrate-options-composition')
 
 /** Deterministic script rewrites: run before risk detection so these are no longer "risks" */
 const migratePlugins = [
@@ -43,6 +48,9 @@ const migratePlugins = [
   migrateMount,
   migrateChildren,
   migrateInstanceEvents,
+  migrateDynamicImport,
+  migrateAsyncComponent,
+  migrateOptionsComposition,
 ]
 
 const riskPlugins = [
@@ -56,6 +64,7 @@ const riskPlugins = [
   riskProvidePrimitive,
   riskGlobalsExtend,
   riskMixinCollision,
+  riskOptionsComposition,
   riskAnnotate,
   riskSummary,
 ]
@@ -66,6 +75,7 @@ const transformPlugins = migratePlugins.concat([
   typescript,
   vuex,
   router,
+  i18n,
   element,
 ])
 
@@ -92,10 +102,14 @@ module.exports = {
   migrateMount,
   migrateChildren,
   migrateInstanceEvents,
+  migrateDynamicImport,
+  migrateAsyncComponent,
+  migrateOptionsComposition,
   scss,
   less,
   typescript,
   vuex,
   router,
+  i18n,
   element,
 }

@@ -45,21 +45,28 @@ function ensureCreateAppImport(code) {
   return { code: "import { createApp } from 'vue'\n" + code, added: true }
 }
 
+/**
+ * Pull `router` / `store` (shorthand or `router: x`) out of createApp options → `.use(x)`.
+ * Scope: only these two keys on the options object literal passed to `new Vue({…}).$mount`.
+ * Does not touch pinia, i18n, or custom plugins (AI / later plugins).
+ */
 function extractPluginsFromOptions(optsSrc) {
   let body = optsSrc
   const uses = []
+  // Lead may be `{` so `{ router, store }` works (previous bug: only `,`/`^`/newline matched,
+  // so the first shorthand after `{` stayed inside options).
   ;['router', 'store'].forEach((name) => {
-    const reShort = new RegExp('(^|[,\\n\\r])(\\s*)' + name + '\\s*(?=,|[\\n\\r]|})')
-    const reLong = new RegExp('(^|[,\\n\\r])(\\s*)' + name + '\\s*:\\s*([^,\\n\\r}]+)')
+    const reLong = new RegExp('(^|[{,\\n\\r])(\\s*)' + name + '\\s*:\\s*([^,\\n\\r}]+)')
+    const reShort = new RegExp('(^|[{,\\n\\r])(\\s*)' + name + '\\s*(?=,|[\\n\\r]|})')
     if (reLong.test(body)) {
       body = body.replace(reLong, (mm, lead, sp, val) => {
         uses.push(val.trim())
-        return lead + sp
+        return lead === '{' ? '{' : lead
       })
     } else if (reShort.test(body)) {
-      body = body.replace(reShort, (mm, lead, sp) => {
+      body = body.replace(reShort, (mm, lead) => {
         uses.push(name)
-        return lead + sp
+        return lead === '{' ? '{' : lead
       })
     }
   })
@@ -67,6 +74,7 @@ function extractPluginsFromOptions(optsSrc) {
     .replace(/,\s*,/g, ',')
     .replace(/\{\s*,/g, '{')
     .replace(/,\s*\}/g, '\n}')
+    .replace(/\{\s+/g, '{ ')
   return { body, uses }
 }
 

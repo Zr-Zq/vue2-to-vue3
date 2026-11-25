@@ -28,9 +28,9 @@ The base must match what the scripts already assume so copy / import rewrite / p
 |-------------|-----|
 | Root has `package.json` (prefer also `vite.config.*` and `jsconfig.json` / `tsconfig.json`) | `looksLikeProject(--to)` must be true; otherwise migrate pauses for “AI base” |
 | Default app tree under **`src/`** (same as source `--src` / `--dest-src`) | Script copy is path-relative; odd layouts force special flags |
-| Alias **`@` → `src`** (and `~` if the source used it); keep `jsconfig`/`tsconfig` paths in sync with Vite | `ingest` / `rewrite-imports` resolve and rewrite against the **base** alias |
+| Alias **`@` → `src`** (and `~` if the source used it); keep `jsconfig`/`tsconfig` paths in sync with Vite | `ingest` / `rewrite-imports` resolve and rewrite against the **base** alias; **keep `.vue` extensions** (Vite); ingest also copies styles/assets (scss/css/images/fonts), not only SFC/JS |
 | Root engineering files only from AI (env, Vite, package.json, lint…) | Scripts **never** migrate env/project config — they must already be correct |
-| Stub `src/main.js` / router OK to be **overwritten** by copy | Do not invent a layout that copy cannot overlay onto |
+| Stub `src/main.js` / router OK to be **overwritten** by copy | Do not invent a layout that copy cannot overlay onto. Copied Vue2 `router/index.js` and layouts are migrated by the pipeline (`router` plugin → Vue Router 4, `migrate-dynamic-import` → `import.meta.glob`); do **not** restore the base versions by hand |
 | No waiting on scripts for missing deps, alias, or proxy | Handoff = AI done → script copy+pipeline → AI-TODO only for syntax/semantics |
 
 If the source used non-`src` roots, mirror that with matching `--dest-src` and document it in `.v23/scaffold-notes.md`; default remains `src/`.

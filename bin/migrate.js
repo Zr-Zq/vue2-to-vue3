@@ -13,7 +13,7 @@
  *   3 copy      Copy by relative path into --to; backup then overwrite if exists
  *   4 pipeline  Deterministic syntax migration + AI-TODO (no env / project-config transforms)
  *   5 todos     Emit AI todo list (script pauses here for AI)
- *   6 check     After AI edits: missing-refs check
+ *   6 check     After AI edits: missing-refs check + syntax check
  *   7 pipeline  May re-run --step pipeline for another round
  *
  *   --step script  = analyze + copy + pipeline + todos (default; no scaffold)
@@ -39,7 +39,7 @@ function printHelp() {
 
 Workflow:
   Analyze source → (AI builds base) → copy (backup then overwrite) → pipeline auto-fix + AI-TODO
-  → [PAUSE] AI edits markers → check-refs → may re-run pipeline
+  → [PAUSE] AI edits markers → check-refs + check-syntax → may re-run pipeline
 
 Required:
   --from <dir>          Vue2 source project root
@@ -61,7 +61,7 @@ Examples:
   # After AI created a Vite+Vue3 base (incl. env) at --to:
   v23-migrate --from D:/old-app --src src --to D:/new-app
   v23-migrate --from D:/old-app --to D:/new-app --step analyze
-  # After AI finishes AI-TODO items:
+  # After AI finishes AI-TODO items (missing refs + JSON/JS syntax):
   v23-migrate --to D:/new-app --step check
   v23-migrate --to D:/new-app --step pipeline
 `)
@@ -274,10 +274,23 @@ function stepTodos(toRoot) {
 }
 
 function stepCheck(toRoot) {
-  console.log('\n=== 6. Missing-refs check ===')
-  runNode('check-refs.js', [toRoot, '--all'], 'check-refs')
-  console.log('Check report:', path.join(projectWorkDir(toRoot), 'missing-refs-for-ai.md'))
-  console.log('If missing: AI adds files / fixes imports, then re-run --step check')
+  console.log('\n=== 6. Wrap-up checks (missing refs + syntax) ===')
+  const failures = []
+  try {
+    runNode('check-refs.js', [toRoot, '--all'], 'check-refs')
+  } catch (e) {
+    failures.push(e.message)
+  }
+  try {
+    runNode('check-syntax.js', [toRoot, '--all'], 'check-syntax')
+  } catch (e) {
+    failures.push(e.message)
+  }
+  console.log('Missing-ref report:', path.join(projectWorkDir(toRoot), 'missing-refs-for-ai.md'))
+  console.log('Syntax report:', path.join(projectWorkDir(toRoot), 'syntax-issues-for-ai.md'))
+  if (failures.length) {
+    throw new Error('wrap-up check failed: ' + failures.join('; '))
+  }
   console.log('When green: --step pipeline for next round, or npm run build to verify')
 }
 

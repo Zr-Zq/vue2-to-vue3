@@ -29,6 +29,7 @@ JS 流 `migrate-filters`：
 | 情况 | status |
 |------|--------|
 | 找到 `filters` 并并入 `methods` | `done` |
+| 与已有 method 同名 — 保留 method，filter 存为 `__v23Filter_<name>`，并改写 mustache / `v-bind` 调用 | `done` |
 | 无 `filters`（已改过 / 不存在） | `skipped`（不算失败） |
 
 ## 流水线预设
@@ -40,12 +41,14 @@ JS 流 `migrate-filters`：
 | `'html-only'` | 仅 HTML 流 + 少量风险汇总 |
 | `'js-only'` | 仅 JS 流（读 handoff） |
 | `'full'` / 数组 | 完整 HTML→JS→风险 |
+| 自定义数组 | 例如仅风险（HTML quirks + JS 风险 + `risk-options-composition` + 标注），`2.pure-vue-app` 在 Options→Composition 改写前使用 |
 
 示例：
 
 ```js
 module.exports = {
-  dryRun: false,
+  // 不会改写源文件。原地写回必须：v23-run <project> --write
+  dryRun: true,
   preflightPipeline: 'html-only', // 预览模板
 }
 // 之后再：

@@ -29,6 +29,7 @@ JS ストリーム `migrate-filters`：
 | 状況 | status |
 |------|--------|
 | `filters` を見つけて `methods` にマージ | `done` |
+| 既存 method と同名 — method を残し、filter は `__v23Filter_<name>`、mustache / `v-bind` 呼び出しを書き換え | `done` |
 | `filters` なし（既に変更済み / 存在しない） | `skipped`（失敗ではない） |
 
 ## パイプラインプリセット
@@ -40,12 +41,14 @@ JS ストリーム `migrate-filters`：
 | `'html-only'` | HTML ストリームのみ + 軽いリスク集計 |
 | `'js-only'` | JS ストリームのみ（handoff を読む） |
 | `'full'` / 配列 | 完全な HTML→JS→リスク |
+| カスタム配列 | 例: リスクのみ（HTML quirks + JS リスク + `risk-options-composition` + 注釈）。`2.pure-vue-app` が Options→Composition 書き換え前に使用 |
 
 例：
 
 ```js
 module.exports = {
-  dryRun: false,
+  // ソースは書き換えない。インプレース書き戻しは v23-run <project> --write が必要
+  dryRun: true,
   preflightPipeline: 'html-only', // テンプレートをプレビュー
 }
 // その後：

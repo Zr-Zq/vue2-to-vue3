@@ -2,6 +2,7 @@ const { createRegistry } = require('./registry')
 const { registerBuiltins } = require('./plugins')
 const {
   loadPipelineConfig,
+  applyCliWriteMode,
   DEFAULT_PIPELINE,
   DEFAULT_PREFLIGHT_PIPELINE,
   DEFAULT_CONFIG,
@@ -59,6 +60,7 @@ module.exports = {
   createFileContext,
   createProjectContext,
   loadPipelineConfig,
+  applyCliWriteMode,
   DEFAULT_PIPELINE,
   DEFAULT_PREFLIGHT_PIPELINE,
   DEFAULT_CONFIG,

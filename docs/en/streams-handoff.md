@@ -29,6 +29,7 @@ JS stream `migrate-filters`:
 | Case | status |
 |------|--------|
 | Found `filters` and merged into `methods` | `done` |
+| Same name as an existing method — keep method, store filter as `__v23Filter_<name>`, rewrite mustache / `v-bind` calls | `done` |
 | No `filters` (already migrated / absent) | `skipped` (not a failure) |
 
 ## Pipeline presets
@@ -40,12 +41,14 @@ In `v23.pipeline.js`, `preflightPipeline` may be:
 | `'html-only'` | HTML stream only + light risk summary |
 | `'js-only'` | JS stream only (reads handoff) |
 | `'full'` / array | Full HTML→JS→risks |
+| custom array | e.g. risks-only (HTML quirks + JS risks + `risk-options-composition` + annotate), used by `2.pure-vue-app` before Options→Composition rewrite |
 
 Example:
 
 ```js
 module.exports = {
-  dryRun: false,
+  // Does not rewrite sources. In-place writes require: v23-run <project> --write
+  dryRun: true,
   preflightPipeline: 'html-only', // preview templates
 }
 // later:

@@ -32,6 +32,7 @@ const RISK_STREAM = [
   { name: 'risk-provide-primitive' },
   { name: 'risk-globals-extend' },
   { name: 'risk-mixin-collision' },
+  { name: 'risk-options-composition' },
   { name: 'risk-annotate' },
   { name: 'risk-summary' },
 ]
@@ -64,6 +65,7 @@ const DEFAULT_PIPELINE = [
   { name: 'typescript', enabled: true },
   { name: 'vuex', enabled: true },
   { name: 'router', enabled: true },
+  { name: 'i18n', enabled: true },
   { name: 'element', enabled: true },
 ]
 
@@ -126,6 +128,19 @@ function loadPipelineConfig(projectRoot, explicitPath) {
   return merged
 }
 
+/**
+ * In-place writes require an explicit CLI `--write`.
+ * `v23.pipeline.js` `dryRun: false` must not rewrite the project by itself.
+ * `--out` still targets that directory only (sources stay put unless `--write`).
+ */
+function applyCliWriteMode(config, opts) {
+  const write = !!(opts && opts.write)
+  const outDir = opts && opts.outDir
+  if (write) config.dryRun = false
+  else if (!outDir) config.dryRun = true
+  return config
+}
+
 module.exports = {
   DEFAULT_CONFIG,
   DEFAULT_PREFLIGHT_PIPELINE,
@@ -136,4 +151,5 @@ module.exports = {
   HTML_ONLY_PREFLIGHT,
   JS_ONLY_PREFLIGHT,
   loadPipelineConfig,
+  applyCliWriteMode,
 }

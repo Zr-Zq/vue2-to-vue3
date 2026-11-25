@@ -7,6 +7,50 @@ const { rewriteFileContent } = require('./rewrite-imports')
 const { toPosixRel } = require('./resolve')
 const { ensureBackupBatch, backupIfExists } = require('./backup')
 
+/** Code files whose imports are rewritten during ingest. */
+const CODE_EXTS = new Set(['.vue', '.js', '.jsx', '.ts', '.tsx', '.mjs', '.cjs'])
+
+/** Binary / font / media — copy bytes, never utf8-rewrite. */
+const BINARY_EXTS = new Set([
+  '.png',
+  '.jpg',
+  '.jpeg',
+  '.gif',
+  '.webp',
+  '.ico',
+  '.bmp',
+  '.woff',
+  '.woff2',
+  '.ttf',
+  '.eot',
+  '.otf',
+  '.mp3',
+  '.mp4',
+  '.webm',
+  '.wasm',
+  '.pdf',
+])
+
+/**
+ * Directory ingest globs: SFC/JS + styles + common static assets.
+ * (Previously only *.{vue,js,...} — scss/css/images were dropped.)
+ */
+const INGEST_GLOBS = [
+  '**/*.{vue,js,jsx,ts,tsx,mjs,cjs}',
+  '**/*.{css,scss,sass,less,styl,stylus}',
+  '**/*.{png,jpg,jpeg,gif,webp,ico,svg,bmp}',
+  '**/*.{woff,woff2,ttf,eot,otf}',
+  '**/*.{json,md,txt,html,htm}',
+]
+
+function isCodeExt(ext) {
+  return CODE_EXTS.has(String(ext || '').toLowerCase())
+}
+
+function isBinaryExt(ext) {
+  return BINARY_EXTS.has(String(ext || '').toLowerCase())
+}
+
 /**
  * Ingest source project files into the scaffold project and rewrite imports using scaffold path config
  *
@@ -56,11 +100,11 @@ function ingestFiles(options) {
   const toIsDirHint = opts.toDir || (fromIsDir && !/\.(vue|jsx?|tsx?|mjs|cjs)$/i.test(toInput))
 
   if (fromIsDir) {
-    const files = fg.sync(['**/*.{vue,js,jsx,ts,tsx,mjs,cjs}'], {
+    const files = fg.sync(INGEST_GLOBS, {
       cwd: fromInputs[0],
       absolute: true,
       onlyFiles: true,
-      ignore: ['**/node_modules/**', '**/dist/**'],
+      ignore: ['**/node_modules/**', '**/dist/**', '**/.git/**', '**/.v23/**'],
     })
     const outDir = toIsDirHint ? toInput : path.dirname(toInput)
     files.forEach((abs) => {
@@ -91,17 +135,27 @@ function ingestFiles(options) {
   const results = []
   let backedUpCount = 0
   pairs.forEach((pair) => {
-    const content = fs.readFileSync(pair.fromAbs, 'utf8')
     const ext = path.extname(pair.fromAbs).toLowerCase()
-    const rewritten = rewriteFileContent(
-      content,
-      ext,
-      pair.fromAbs,
-      pair.toAbs,
-      sourceConfig,
-      baseConfig,
-      pathMap
-    )
+    let rewritten = { content: null, changes: [], error: null }
+    let binary = false
+
+    if (isBinaryExt(ext)) {
+      binary = true
+    } else if (isCodeExt(ext)) {
+      const content = fs.readFileSync(pair.fromAbs, 'utf8')
+      rewritten = rewriteFileContent(
+        content,
+        ext,
+        pair.fromAbs,
+        pair.toAbs,
+        sourceConfig,
+        baseConfig,
+        pathMap
+      )
+    } else {
+      // Styles / svg / markdown / etc. — copy text as-is (no import rewrite)
+      rewritten = { content: fs.readFileSync(pair.fromAbs, 'utf8'), changes: [], error: null }
+    }
 
     let backupInfo = { backedUp: false, backupPath: null }
     if (!opts.dryRun) {
@@ -110,7 +164,11 @@ function ingestFiles(options) {
         if (backupInfo.backedUp) backedUpCount += 1
       }
       fs.mkdirSync(path.dirname(pair.toAbs), { recursive: true })
-      fs.writeFileSync(pair.toAbs, rewritten.content, 'utf8')
+      if (binary) {
+        fs.copyFileSync(pair.fromAbs, pair.toAbs)
+      } else {
+        fs.writeFileSync(pair.toAbs, rewritten.content, 'utf8')
+      }
     }
 
     results.push({
@@ -120,6 +178,7 @@ function ingestFiles(options) {
       toAbs: pair.toAbs,
       changes: rewritten.changes,
       error: rewritten.error || null,
+      binary,
       backedUp: backupInfo.backedUp,
       backupPath: backupInfo.backupPath,
     })
@@ -157,4 +216,7 @@ function ingestFiles(options) {
 
 module.exports = {
   ingestFiles,
+  INGEST_GLOBS,
+  isCodeExt,
+  isBinaryExt,
 }

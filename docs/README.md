@@ -11,6 +11,7 @@ Docs are available in Chinese, English, and Japanese.
 | Cannot fully automate | [zh/cannot-fully-auto.md](./zh/cannot-fully-auto.md) | [en/cannot-fully-auto.md](./en/cannot-fully-auto.md) | [ja/cannot-fully-auto.md](./ja/cannot-fully-auto.md) |
 | HTML (template) format for AI | [zh/html-format.md](./zh/html-format.md) | [en/html-format.md](./en/html-format.md) | [ja/html-format.md](./ja/html-format.md) |
 | Missing refs format for AI | [zh/missing-refs-format.md](./zh/missing-refs-format.md) | [en/missing-refs-format.md](./en/missing-refs-format.md) | [ja/missing-refs-format.md](./ja/missing-refs-format.md) |
+| Syntax check format for AI | [zh/syntax-check-format.md](./zh/syntax-check-format.md) | [en/syntax-check-format.md](./en/syntax-check-format.md) | [ja/syntax-check-format.md](./ja/syntax-check-format.md) |
 | AI scaffold notes | [zh/ai-scaffold-notes.md](./zh/ai-scaffold-notes.md) | [en/ai-scaffold-notes.md](./en/ai-scaffold-notes.md) | [ja/ai-scaffold-notes.md](./ja/ai-scaffold-notes.md) |
 
 Within each locale folder, cross-links use locale-relative paths such as `./workflow.md`.

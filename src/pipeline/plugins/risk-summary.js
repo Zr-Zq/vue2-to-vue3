@@ -44,6 +44,12 @@ const CANNOT_FULLY_AUTO = [
     title: 'provide of primitives is not reactive',
     reason: 'Wrapping in ref changes how every inject site reads the value',
   },
+  {
+    category: 'options-to-composition',
+    title: 'Options API → Composition API (scope / this / lifecycle)',
+    reason:
+      'data/computed/watch/methods/mixins/lifecycle and this.$refs/$emit/$options etc. need AI rewrite to setup/script setup; scripts do not auto-convert Options→Composition',
+  },
 ]
 
 module.exports = createPlugin({

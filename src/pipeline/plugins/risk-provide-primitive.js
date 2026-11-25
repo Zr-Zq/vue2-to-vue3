@@ -30,7 +30,8 @@ function scanProvideObject(obj, file, project, loc) {
         message: 'provide primitive key "' + key + '" (not reactive in Vue2)',
         loc: locOf(prop) || loc,
         evidence: key,
-        hint: 'Auto-wrapping ref/reactive may change callers; confirm',
+        hint:
+          'Options→Composition wraps primitives in ref(); inject side must use Ref (.value). Sample inject call sites and confirm (auto=partial).',
       })
     }
   })

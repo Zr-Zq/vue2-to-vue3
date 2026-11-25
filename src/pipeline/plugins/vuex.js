@@ -2,6 +2,8 @@ const { createPlugin } = require('../create-plugin')
 
 /**
  * Vuex → compat / Pinia migration plugin slot.
+ * Owns this.$store / mapState|mapGetters|mapMutations|mapActions
+ * (options-composition leaves them alone).
  */
 module.exports = createPlugin({
   name: 'vuex',

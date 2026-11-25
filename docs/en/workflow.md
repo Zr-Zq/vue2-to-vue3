@@ -21,7 +21,7 @@
 4. pipeline    Script: deterministic syntax transforms (sync/native/slot/render/mount/…)
                · Unsafe items get AI-TODO; **no env / project-config migration**
 5. 【pause】   AI: fix items listed in to/.v23/ai-todos.md one by one
-6. check       Script: v23-check-refs (missing local refs)
+6. check       Script: v23-check-refs (missing local refs) + v23-check-syntax (JSON / JS / Vue script)
 7. next round  After pass, optionally re-run pipeline / build for acceptance
 ```
 
@@ -45,7 +45,7 @@ node 2to3/bin/migrate.js --to D:/new-app --step pipeline
 
 | Who | What |
 |-----|------|
-| Scripts | Analyze, copy+backup, deterministic syntax migration, mark AI-TODO, missing-ref checks; **never touch `.env*` / project config** |
+| Scripts | Analyze, copy+backup, deterministic syntax migration, mark AI-TODO, missing-ref checks, syntax checks; **never touch `.env*` / project config**. Analyze may write `<from>/.v23` reports only — **source files are not rewritten** unless `v23-run` / `v23-pipeline` is given `--write` (migration writes the `--to` tree) |
 | AI | Build the **Vue3** base (Vite; **all project config**, **install deps**, **`npm run dev` works**, **seamless with scripts**), resolve AI-TODO, confirm missing refs, business-semantics decisions |
 
 ## Key artifacts (all under `<to>/.v23/`)
@@ -58,6 +58,7 @@ node 2to3/bin/migrate.js --to D:/new-app --step pipeline
 | `ai-todos.md` | AI todo list |
 | `risks.json` / `html-risks.json` | Risk details |
 | `missing-refs-for-ai.md` | Missing-ref confirmation list |
+| `syntax-issues.json` / `syntax-issues-for-ai.md` | JSON and script syntax issues |
 
 ## Required reading for AI
 
@@ -67,4 +68,5 @@ AI agents use **this English set only** (`docs/en/`). Do not use `docs/zh` or `d
 - `./html-format.md` — HTML/template findings
 - `./streams-handoff.md` — HTML/JS stream split and `.v23/handoff.json`
 - `./missing-refs-format.md` — Missing-ref JSON
+- `./syntax-check-format.md` — JSON / binding / script syntax check
 - `./cannot-fully-auto.md` — Items that cannot be fully automated

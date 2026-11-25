@@ -21,7 +21,7 @@
 4. pipeline    脚本：确定性语法迁移（sync/native/slot/render/mount/…）
                · 不能稳改的打 AI-TODO；**不迁移环境变量/工程配置**
 5. 【暂停】    AI：按 to/.v23/ai-todos.md 逐项改
-6. check       脚本：v23-check-refs（缺本地引用）
+6. check       脚本：v23-check-refs（缺本地引用）+ v23-check-syntax（JSON / JS / Vue script 语法）
 7. 下一轮      通过后可再 pipeline / build 验收
 ```
 
@@ -45,7 +45,7 @@ node 2to3/bin/migrate.js --to D:/new-app --step pipeline
 
 | 谁 | 做什么 |
 |----|--------|
-| 脚本 | 分析、copy+备份、确定性语法迁移、打 AI-TODO、缺引用检查；**不碰 `.env*` / 工程配置** |
+| 脚本 | 分析、copy+备份、确定性语法迁移、打 AI-TODO、缺引用检查、语法检查；**不碰 `.env*` / 工程配置**。分析只写 `<from>/.v23` 报告——**不改写源文件**，除非 `v23-run` / `v23-pipeline` 显式带 `--write`（迁移写的是 `--to`） |
 | AI | 建 **Vue3** 底座（Vite；**全部工程配置**、**装依赖**、**能启动**、**与脚本无缝衔接**）、处理 AI-TODO、确认缺引用、业务语义决策 |
 
 ## 关键产物（均在 `<to>/.v23/`）
@@ -58,6 +58,7 @@ node 2to3/bin/migrate.js --to D:/new-app --step pipeline
 | `ai-todos.md` | AI 待改清单 |
 | `risks.json` / `html-risks.json` | 风险明细 |
 | `missing-refs-for-ai.md` | 缺引用确认清单 |
+| `syntax-issues.json` / `syntax-issues-for-ai.md` | JSON 与脚本语法问题 |
 
 ## AI 必读
 
@@ -67,4 +68,5 @@ node 2to3/bin/migrate.js --to D:/new-app --step pipeline
 - `../en/html-format.md` — HTML/template findings
 - `../en/streams-handoff.md` — HTML/JS 分流与 `.v23/handoff.json`
 - `../en/missing-refs-format.md` — 缺引用 JSON
+- `../en/syntax-check-format.md` — JSON / 声明 / 脚本语法检查
 - `../en/cannot-fully-auto.md` — 不可完整自动项

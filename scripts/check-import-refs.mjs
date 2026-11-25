@@ -379,14 +379,16 @@ function collectChangedFiles(root, { branchDiff } = {}) {
  */
 function extractSpecifiers(content) {
   const hits = [];
+  // Static import/export must start a statement, so the word "import" inside strings
+  // (e.g. desc: 'default import') is not read as a side-effect import; specifiers never span lines.
   const patterns = [
-    /\bimport\s*(?:type\s+)?[\s\S]*?\bfrom\s*['"`]([^'"`]+)['"`]/g,
-    /\bimport\s*['"`]([^'"`]+)['"`]/g,
-    /\bimport\s*\(\s*['"`]([^'"`]+)['"`]\s*\)/g,
-    /\brequire\s*\(\s*['"`]([^'"`]+)['"`]\s*\)/g,
-    /\bexport\s+(?:\*|\{[\s\S]*?\})\s*from\s*['"`]([^'"`]+)['"`]/g,
+    /(?:^|[;}>])[ \t]*import\s*(?:type\s+)?[^;'"`]*?\bfrom\s*['"`]([^'"`\r\n]+)['"`]/gm,
+    /(?:^|[;}>])[ \t]*import\s*['"`]([^'"`\r\n]+)['"`]/gm,
+    /\bimport\s*\(\s*['"`]([^'"`\r\n]+)['"`]\s*\)/g,
+    /\brequire\s*\(\s*['"`]([^'"`\r\n]+)['"`]\s*\)/g,
+    /(?:^|[;}>])[ \t]*export\s+(?:\*(?:\s+as\s+\w+)?|\{[^}]*\})\s*from\s*['"`]([^'"`\r\n]+)['"`]/gm,
     // Common wrappers: skip request('/api'); check request('@/x') / request('./x')
-    /\b(?:request|axios|http|fetchJson|get|post)\s*\(\s*['"`]([.@~][^'"`]+)['"`]/g,
+    /\b(?:request|axios|http|fetchJson|get|post)\s*\(\s*['"`]([.@~][^'"`\r\n]+)['"`]/g,
   ];
 
   const lines = content.split(/\r?\n/);
@@ -872,6 +874,36 @@ export default {
     cases.push({
       name: 'next alias[\'@\']= assignment parse',
       pass: r.ok === true && r.aliases?.['@'] === 'src',
+      detail: r,
+    });
+  }
+
+  // Case 13: the word "import" inside string literals is not a side-effect import
+  {
+    const root = path.join(tmp, 'import-in-string');
+    writeFixtureTree(root, {
+      'vite.config.mjs': `export default { resolve: { alias: { '@': './src' } } };\n`,
+      'src/Page.vue': `<template><div /></template>
+<script setup>import ok from '@/ok.js'
+import {
+  a,
+  b,
+} from './multi.js'
+const rows = [{
+  desc: 'default import',
+  expect: 'tag:x',
+}, { desc: 'side import', expect: 'y' }]
+const lazy = () => import('./lazy.js')
+</script>
+`,
+      'src/ok.js': `export default 1;\n`,
+      'src/multi.js': `export const a = 1, b = 2;\n`,
+      'src/lazy.js': `export default 1;\n`,
+    });
+    const r = checkProject(root, { files: ['src/Page.vue'] });
+    cases.push({
+      name: 'string containing "import" is not a module specifier',
+      pass: r.ok === true,
       detail: r,
     });
   }

@@ -21,7 +21,7 @@
 4. pipeline    スクリプト：確定的な構文移行（sync/native/slot/render/mount/…）
                · 安定して直せないものは AI-TODO；**環境変数・工程設定は移行しない**
 5. 【一時停止】 AI：to/.v23/ai-todos.md に従い逐項修正
-6. check       スクリプト：v23-check-refs（ローカル参照の欠落）
+6. check       スクリプト：v23-check-refs（ローカル参照の欠落）+ v23-check-syntax（JSON / JS / Vue script の構文）
 7. 次ラウンド   通過後、必要なら再度 pipeline / build で受け入れ確認
 ```
 
@@ -45,7 +45,7 @@ node 2to3/bin/migrate.js --to D:/new-app --step pipeline
 
 | 誰 | 何をするか |
 |----|------------|
-| スクリプト | 分析、copy+バックアップ、確定的な構文移行、AI-TODO 付与、欠落参照チェック；**`.env*` / 工程設定は触らない** |
+| スクリプト | 分析、copy+バックアップ、確定的な構文移行、AI-TODO 付与、欠落参照チェック、構文チェック；**`.env*` / 工程設定は触らない**。分析が書くのは `<from>/.v23` の報告だけ——**ソースファイルは書き換えない**。`v23-run` / `v23-pipeline` に `--write` を付けたときだけ書き戻す（移行の書き込み先は `--to`） |
 | AI | **Vue3** ベース作成（Vite；**工程設定すべて**、**依存インストール**、**起動可**、**スクリプトとシームレス**）、AI-TODO 対応、欠落参照の確認、業務セマンティクスの判断 |
 
 ## 主要成果物（いずれも `<to>/.v23/` 配下）
@@ -58,6 +58,7 @@ node 2to3/bin/migrate.js --to D:/new-app --step pipeline
 | `ai-todos.md` | AI 待改一覧 |
 | `risks.json` / `html-risks.json` | リスク詳細 |
 | `missing-refs-for-ai.md` | 欠落参照の確認リスト |
+| `syntax-issues.json` / `syntax-issues-for-ai.md` | JSON とスクリプト構文の問題 |
 
 ## AI 必読
 
@@ -67,4 +68,5 @@ node 2to3/bin/migrate.js --to D:/new-app --step pipeline
 - `../en/html-format.md` — HTML/template findings
 - `../en/streams-handoff.md` — HTML/JS 分流と `.v23/handoff.json`
 - `../en/missing-refs-format.md` — 欠落参照 JSON
+- `../en/syntax-check-format.md` — JSON / 宣言 / スクリプト構文チェック
 - `../en/cannot-fully-auto.md` — 完全自動できない項目

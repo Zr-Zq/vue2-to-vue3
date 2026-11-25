@@ -28,9 +28,9 @@ AI は空シェルで止めず、次までやり切ること：
 |------|------|
 | ルートに `package.json`（できれば `vite.config.*` と `jsconfig.json` / `tsconfig.json` も） | `looksLikeProject(--to)` が真であること；さもなくば migrate は「AI ベース待ち」で止まる |
 | 既定のアプリツリーは **`src/`**（ソースの `--src` / `--dest-src` と一致） | スクリプト copy は相対パス；変則レイアウトは追加フラグが要る |
-| エイリアス **`@` → `src`**（ソースが `~` も使っていれば同様）；`jsconfig`/`tsconfig` paths と Vite を一致 | `ingest` / `rewrite-imports` は**ベース**の alias で解決・書き換え |
+| エイリアス **`@` → `src`**（ソースが `~` も使っていれば同様）；`jsconfig`/`tsconfig` paths と Vite を一致 | `ingest` / `rewrite-imports` は**ベース**の alias で解決・書き換え；**`.vue` 拡張子を保持**（Vite）；ingest はスタイル/アセット（scss/css/画像/フォント）もコピー（SFC/JS のみではない） |
 | ルート工程ファイルは AI のみが用意（env、Vite、package.json、lint…） | スクリプトは env/工程設定を**移行しない**——ベース側で既に正しいこと |
-| スタブ `src/main.js` / router は copy で**上書きされてよい** | スクリプトが重ねられないレイアウトにしない |
+| スタブ `src/main.js` / router は copy で**上書きされてよい** | スクリプトが重ねられないレイアウトにしない。コピーされた Vue2 の `router/index.js`・レイアウトはパイプラインが移行する（`router` プラグイン → Vue Router 4、`migrate-dynamic-import` → `import.meta.glob`）。底座版を手で戻さ**ない** |
 | 欠けた依存・alias・proxy をスクリプトに残さない | 引き渡し = AI 完了 → スクリプト copy+pipeline → 構文/意味の AI-TODO のみ |
 
 ソースが `src` 以外のルートなら、対応する `--dest-src` を使い `.v23/scaffold-notes.md` に書く。既定は `src/`。

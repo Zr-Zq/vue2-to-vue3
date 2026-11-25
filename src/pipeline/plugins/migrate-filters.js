@@ -1,5 +1,6 @@
 const { createPlugin } = require('../create-plugin')
 const { migrateFiltersOption } = require('../../transform/js-filters-option')
+const { rewriteFilterCallAliases } = require('../../transform/html-filters')
 const { applySfcTransforms } = require('../../transform/apply-sfc')
 const {
   pendingForFile,
@@ -11,11 +12,21 @@ const {
 /**
  * JS stream: options.filters → methods.
  * Can run alone or consume HTML-stream handoff. Skip (no error) if filters not found.
+ * On name collision with methods: keep method, store filter as __v23Filter_<name>,
+ * and rewrite mustache / v-bind call sites in the same SFC.
  */
+function collectRenames(changes) {
+  const renames = Object.create(null)
+  ;(changes || []).forEach((c) => {
+    if (c && c.kind === 'filters-rename-dup' && c.from && c.to) renames[c.from] = c.to
+  })
+  return renames
+}
+
 module.exports = createPlugin({
   name: 'migrate-filters',
   description: 'JS stream: options.filters → methods (consume HTML handoff; skip if missing)',
-  version: '0.2.0',
+  version: '0.3.0',
   defaults: { enabled: true, stream: 'js' },
   match(ctx, api) {
     if (api.options && api.options.enabled === false) return false
@@ -32,37 +43,61 @@ module.exports = createPlugin({
 
     let changed = false
     let migratedNames = []
+    let allChanges = []
 
     if (ctx.file.ext === '.vue') {
-      const result = applySfcTransforms(ctx.file.content, ctx.file.absPath, null, (js, meta) =>
+      const scriptResult = applySfcTransforms(ctx.file.content, ctx.file.absPath, null, (js, meta) =>
         migrateFiltersOption(js, ctx.file.absPath + '#' + (meta && meta.id))
       )
-      migratedNames = (result.changes || [])
-        .filter((c) => c.kind === 'filters-to-methods' || c.kind === 'filters-rename-methods')
-        .map((c) => c.name)
+      allChanges = scriptResult.changes || []
+      migratedNames = allChanges
+        .filter(
+          (c) =>
+            c.kind === 'filters-to-methods' ||
+            c.kind === 'filters-rename-methods' ||
+            c.kind === 'filters-rename-dup'
+        )
+        .map((c) => c.name || c.to)
         .filter(Boolean)
-      if (result.changes.length && result.content !== ctx.file.content) {
-        ctx.setContent(result.content, 'migrate-filters')
+
+      let content = scriptResult.content
+      const renames = collectRenames(allChanges)
+      if (Object.keys(renames).length) {
+        const tplResult = applySfcTransforms(content, ctx.file.absPath, (tpl) =>
+          rewriteFilterCallAliases(tpl, renames)
+        )
+        allChanges = allChanges.concat(tplResult.changes || [])
+        content = tplResult.content
+      }
+
+      if (allChanges.length && content !== ctx.file.content) {
+        ctx.setContent(content, 'migrate-filters')
         changed = true
         ctx.report({
           level: 'info',
           plugin: 'migrate-filters',
-          message: 'filters→methods ×' + result.changes.length,
+          message: 'filters→methods ×' + allChanges.length,
         })
       }
     } else {
       const result = migrateFiltersOption(ctx.file.content, ctx.file.absPath)
-      migratedNames = (result.changes || [])
-        .filter((c) => c.kind === 'filters-to-methods' || c.kind === 'filters-rename-methods')
-        .map((c) => c.name)
+      allChanges = result.changes || []
+      migratedNames = allChanges
+        .filter(
+          (c) =>
+            c.kind === 'filters-to-methods' ||
+            c.kind === 'filters-rename-methods' ||
+            c.kind === 'filters-rename-dup'
+        )
+        .map((c) => c.name || c.to)
         .filter(Boolean)
-      if (result.changes.length && result.code !== ctx.file.content) {
+      if (allChanges.length && result.code !== ctx.file.content) {
         ctx.setContent(result.code, 'migrate-filters')
         changed = true
         ctx.report({
           level: 'info',
           plugin: 'migrate-filters',
-          message: 'filters→methods ×' + result.changes.length,
+          message: 'filters→methods ×' + allChanges.length,
         })
       }
     }
@@ -76,7 +111,6 @@ module.exports = createPlugin({
           note: 'filters merged into methods',
         })
       } else {
-        // HTML handed off, but script has no filters (or already edited) → skip
         resolveHandoffItem(ctx.project, {
           file: ctx.file.path,
           kind: 'filters-to-methods',

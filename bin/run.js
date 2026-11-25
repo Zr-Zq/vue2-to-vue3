@@ -5,7 +5,7 @@
 const fs = require('fs')
 const path = require('path')
 const { writeAnalyze } = require('../src/write-analyze')
-const { run, loadPipelineConfig } = require('../src/pipeline')
+const { run, loadPipelineConfig, applyCliWriteMode } = require('../src/pipeline')
 const {
   cleanProjectWorkDir,
   cleanOutputRoot,
@@ -26,7 +26,9 @@ Full flow:
 
 Options:
   --keep            Keep .v23 after finish (includes risks.json)
-  --write           Write back to sources (including risk AI-TODO comments)
+  --write           Write back in place (including risk AI-TODO comments).
+                    Without this flag, sources are not rewritten even if
+                    v23.pipeline.js sets dryRun:false
   --annotate        Migration plugins mode=annotate (demo rewrite; not the same as AI-TODO)
   --order <a,b,c>   Override migration pipeline order only
   --skip-pipeline   Analyze + clean only
@@ -104,7 +106,7 @@ async function main() {
         })
       })
     }
-    if (args.write) config.dryRun = false
+    applyCliWriteMode(config, { write: args.write })
     // Graph already built; skip rebuild; keep preflight=false and pass graph
     config.preflight = false
 

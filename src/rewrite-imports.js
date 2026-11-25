@@ -33,7 +33,9 @@ function formatImportForBase(absTarget, fromAbsFile, baseConfig) {
 }
 
 function stripExt(p) {
-  return p.replace(/\.(vue|jsx?|tsx?|mjs|cjs|json)$/i, '')
+  // Keep `.vue` — Vite resolves SFCs by extension; stripping breaks imports.
+  // Still drop common script/json extensions for conventional JS/TS imports.
+  return p.replace(/\.(jsx?|tsx?|mjs|cjs|json)$/i, '')
 }
 
 /**

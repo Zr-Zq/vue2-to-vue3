@@ -144,6 +144,48 @@ function migrateHtmlFiltersAndListeners(code) {
   }
 }
 
+/**
+ * After a filter/method name collision, pipe call sites (mustache + v-bind only)
+ * must call the aliased filter. Event handlers keep the method name.
+ * @param {string} code template
+ * @param {Record<string, string>} renames e.g. { upper: '__v23Filter_upper' }
+ */
+function rewriteFilterCallAliases(code, renames) {
+  const map = renames || {}
+  const keys = Object.keys(map).filter((k) => map[k] && map[k] !== k)
+  if (!keys.length) return { code: String(code || ''), changes: [] }
+  keys.sort((a, b) => b.length - a.length)
+  const changes = []
+
+  function rewriteExpr(expr) {
+    let out = expr
+    keys.forEach((from) => {
+      const to = map[from]
+      const re = new RegExp('\\b' + from.replace(/\$/g, '\\$') + '\\s*\\(', 'g')
+      const next = out.replace(re, to + '(')
+      if (next !== out) {
+        changes.push({ kind: 'filter-call-alias', from, to })
+        out = next
+      }
+    })
+    return out
+  }
+
+  let out = String(code || '')
+  out = out.replace(/\{\{([\s\S]*?)\}\}/g, (full, inner) => {
+    const next = rewriteExpr(inner)
+    return next === inner ? full : '{{' + next + '}}'
+  })
+  out = out.replace(
+    /((?:(?::)|(?:v-bind:))[A-Za-z_@:][\w.:-]*)\s*=\s*(["'])([\s\S]*?)\2/g,
+    (full, name, q, val) => {
+      const next = rewriteExpr(val)
+      return next === val ? full : name + '=' + q + next + q
+    }
+  )
+  return { code: out, changes }
+}
+
 module.exports = {
   splitPipes,
   applyFilterChain,
@@ -151,4 +193,5 @@ module.exports = {
   rewriteBindFilters,
   rewriteListenersAttr,
   migrateHtmlFiltersAndListeners,
+  rewriteFilterCallAliases,
 }

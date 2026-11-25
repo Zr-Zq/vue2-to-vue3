@@ -5,6 +5,7 @@ const {
   run,
   createDefaultRegistry,
   loadPipelineConfig,
+  applyCliWriteMode,
 } = require('../src/pipeline')
 const {
   ensureProjectWorkDir,
@@ -21,7 +22,9 @@ output of one stage becomes input of the next.
 Options:
   --config <file>   Pipeline config (default: project v23.pipeline.js / pipeline.config.js)
   --out <dir>       Rewrite output dir (default dry-run does not write sources)
-  --write           Disable dry-run; write files
+  --write           Write files in place. Without this flag, sources are not
+                    rewritten even if v23.pipeline.js sets dryRun:false.
+                    --out still writes only into that directory
   --annotate        All built-in plugins mode=annotate (demo rewrite)
   --list            List built-in plugins and exit
   --order <a,b,c>   Temporarily override pipeline order (comma-separated plugin names)
@@ -115,8 +118,8 @@ async function main() {
       })
     })
   }
-  if (args.write) config.dryRun = false
   if (args.outDir) config.outDir = path.resolve(args.outDir)
+  applyCliWriteMode(config, { write: args.write, outDir: args.outDir })
 
   console.log('Pipeline project:', projectRoot)
   console.log('Config:', config.__loadedFrom || configPath)

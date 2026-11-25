@@ -18,21 +18,21 @@ module.exports = createPlugin({
           if (!chain || !chain.length) return
           const head = chain[0]
           if (!WATCH.has(head)) return
-          // Record root APIs that are read or called only
-          const scripted =
-            head === '$listeners' || head === '$scopedSlots' || head === '$children'
+          // $listeners/$scopedSlots → scripts; $parent/$children/$root → AI
+          const scripted = head === '$listeners' || head === '$scopedSlots'
+          const treeApi = head === '$parent' || head === '$children' || head === '$root'
           pushRisk(api.project, {
             id: 'instance-api.' + head,
             category: 'instance-api',
-            level: head === '$parent' || head === '$root' ? 'block' : scripted ? 'info' : 'warn',
+            level: treeApi ? 'block' : scripted ? 'info' : 'warn',
             auto: scripted ? 'yes' : 'no',
             file: ctx.file.path,
             message: 'Uses instance API this.' + chain.join('.'),
             loc: locOf(p.node),
             evidence: 'this.' + chain.join('.'),
             hint: scripted
-              ? 'Handled by migrate-api-compat / migrate-children'
-              : 'Runtime component-tree dependency; do not rewrite blindly',
+              ? 'Handled by migrate-api-compat'
+              : 'AI: keep behavior via provide/inject or explicit refs (scripts do not rewrite $parent/$children/$root)',
           })
           p.skip()
         },
