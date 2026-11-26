@@ -50,6 +50,8 @@ const migratePlugins = [
   migrateInstanceEvents,
   migrateDynamicImport,
   migrateAsyncComponent,
+  /** Element UI → Plus (size / type=text / date format / imports); after HTML slot rewrites */
+  element,
   migrateOptionsComposition,
 ]
 
@@ -76,7 +78,6 @@ const transformPlugins = migratePlugins.concat([
   vuex,
   router,
   i18n,
-  element,
 ])
 
 const builtins = riskPlugins.concat(transformPlugins)

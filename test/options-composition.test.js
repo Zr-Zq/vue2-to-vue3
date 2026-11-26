@@ -450,17 +450,39 @@ console.log('== edge: $forceUpdate / $destroy child vs root AI note ==')
   ok(!/this\.\$forceUpdate\s*\(/.test(r.code), 'no leftover this.$forceUpdate()')
 }
 
-console.log('== $options.methods to AI-TODO (gone in script setup) ==')
+console.log('== $options.methods.foo → local method (G023) ==')
 {
   const r = migrateOptionsToComposition(
     `export default {
       methods: {
-        readX() { return 1 },
+        readX() { return this.x },
         run() { return this.$options.methods.readX.call({ x: 2 }) }
-      }
+      },
+      data() { return { x: 1 } }
     }`
   )
-  ok(/AI-TODO: \[options-to-composition\] this\.\$options\.methods is undefined in script setup/.test(r.code), 'AI-TODO for $options.methods')
+  ok(/readX\.call\(\{\s*x:\s*2\s*\}\)/.test(r.code), '$options.methods.readX → readX')
+  ok(!(/\$options\)\.methods\.readX/.test(r.code) || /\.\$options\.methods\.readX/.test(r.code)), 'no $options.methods.readX left')
+  ok(!/AI-TODO: \[options-to-composition\] this\.\$options\.methods is undefined/.test(r.code), 'no bare-methods AI-TODO when member rewritten')
+}
+
+console.log('== $children → component template refs (G024) ==')
+{
+  const r = migrateOptionsToComposition(
+    `export default {
+      methods: {
+        probe() {
+          const kids = this.$children || []
+          return kids.length && kids[0].ping()
+        }
+      }
+    }`,
+    { componentTemplateRefs: ['kid'], templateRefNames: ['kid', 'box'] }
+  )
+  ok(/const kid = ref\(null\)/.test(r.code), 'kid ref emitted from template')
+  ok(/\[kid\.value\]\.filter\(Boolean\)/.test(r.code), '$children → [kid.value].filter(Boolean)')
+  ok(!/AI-TODO: \[options-to-composition\] this\.\$children/.test(r.code), 'no $children AI-TODO when refs known')
+  ok(r.changes.some((c) => c.kind === 'this-$children-refs'), 'children-refs change')
 }
 
 console.log('== edge: $data._xxx vs this._xxx (data underscore to ref; internals stay) ==')
@@ -646,6 +668,39 @@ console.log('== const self = this alias (G014) ==')
   ok(!/const self = this/.test(r.code), 'self = this removed')
   ok(/chainLog\.value/.test(r.code) && /mode\.value/.test(r.code), 'self.foo → ref.value')
   ok(!/\bself\./.test(r.code), 'no leftover self.')
+}
+
+console.log('== methods shorthand import (G019) ==')
+{
+  const r = migrateOptionsToComposition(`
+    import { setBrand } from '@/utils/theme'
+    export default {
+      methods: {
+        go() { return 1 },
+        setBrand,
+      }
+    }
+  `)
+  ok(/function setBrand_1\(/.test(r.code) || /function setBrand\(/.test(r.code), 'shorthand method emitted')
+  ok(!/setBrand:\s*setBrand_1/.test(r.code) || /function setBrand_1\(/.test(r.code), 'expose id exists if renamed')
+  ok(r.changes.some((c) => c.kind === 'method' && c.name === 'setBrand'), 'method change recorded')
+}
+
+console.log('== $refs name collides with data (G020) ==')
+{
+  const r = migrateOptionsToComposition(`
+    export default {
+      data() { return { form: { name: '' } } },
+      methods: {
+        login() { this.\$refs.form.validate(() => { this.form.name = 'x' }) }
+      }
+    }
+  `)
+  ok(/const formRef = ref\(null\)/.test(r.code), 'template ref emitted as formRef')
+  ok(/const form = ref\(/.test(r.code), 'data form kept')
+  ok(/formRef\.value\.validate/.test(r.code), '$refs.form → formRef.value')
+  ok(/form\.value\.name/.test(r.code), 'data form still form.value')
+  ok(r.changes.some((c) => c.kind === 'tpl-ref-rename' && c.from === 'form' && c.to === 'formRef'), 'tpl-ref-rename recorded')
 }
 
 console.log('\nAll options-composition tests passed.')

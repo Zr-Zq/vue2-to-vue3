@@ -13,11 +13,13 @@
  * - VueRouter.prototype.push/replace duplicate-navigation patches removed (v4 resolves failures)
  * - VueRouter.isNavigationFailure / NavigationFailureType to named imports
  * - <router>.currentRoute.x to <router>.currentRoute.value.x (v4 currentRoute is a Ref)
+ * - router.match(loc) to router.resolve(loc)
+ * - router.getMatchedComponents() to router.currentRoute.value.matched
  *
  * <script setup> blocks:
  * - this.$route / this.$router to route / router from useRoute() / useRouter()
  *
- * Out of scope (AI-TODO): router.match / getMatchedComponents, non-literal router options.
+ * Out of scope (AI-TODO): non-literal router options.
  * Options API components keep this.$route / this.$router (still valid in Vue3).
  */
 const parser = require('@babel/parser')
@@ -268,6 +270,17 @@ function migrateRouterModule(code, filename) {
     })
   }
 
+  // Pre-collect createRouter(...) bindings (hand-written or prior pass)
+  traverse(ast, {
+    CallExpression(p) {
+      if (!t.isIdentifier(p.node.callee, { name: 'createRouter' })) return
+      const decl = p.parentPath
+      if (decl && decl.isVariableDeclarator() && t.isIdentifier(decl.node.id)) {
+        routerBindings.add(decl.node.id.name)
+      }
+    },
+  })
+
   traverse(ast, {
     CallExpression(p) {
       const { callee } = p.node
@@ -313,8 +326,46 @@ function migrateRouterModule(code, filename) {
         changes.push({ kind: 'router-onReady', note: 'onReady(cb) to isReady().then(cb)' })
         return
       }
-      if (method === 'getMatchedComponents' || (method === 'match' && routerBindings.has(calleeRootName(callee)))) {
-        aiNotes.push('router.' + method + ' removed in Vue Router 4 — use router.resolve / route.matched')
+      // getMatchedComponents() → currentRoute.value.matched (unique VR3 API name)
+      if (method === 'getMatchedComponents' && p.node.arguments.length === 0 && objOk) {
+        p.replaceWith(
+          t.memberExpression(
+            t.memberExpression(
+              t.memberExpression(t.cloneNode(callee.object, true), t.identifier('currentRoute')),
+              t.identifier('value')
+            ),
+            t.identifier('matched')
+          )
+        )
+        changes.push({
+          kind: 'router-getMatchedComponents',
+          note: 'getMatchedComponents() to currentRoute.value.matched',
+        })
+        return
+      }
+      // router.match(loc) → router.resolve(loc)
+      if (method === 'match' && objOk && looksLikeRouterMatch(p, routerBindings)) {
+        // Collapse `typeof x.match === 'function' ? x.match(arg) : null` to `x.resolve(arg)`
+        const cond = p.parentPath
+        if (cond && cond.isConditionalExpression() && cond.node.consequent === p.node) {
+          const test = cond.node.test
+          if (isTypeofMatchFunctionTest(test, callee.object)) {
+            cond.replaceWith(
+              t.callExpression(
+                t.memberExpression(t.cloneNode(callee.object, true), t.identifier('resolve')),
+                p.node.arguments
+              )
+            )
+            changes.push({
+              kind: 'router-match-to-resolve',
+              note: 'typeof router.match ? match : null → router.resolve',
+            })
+            return
+          }
+        }
+        p.node.callee = t.memberExpression(t.cloneNode(callee.object, true), t.identifier('resolve'))
+        changes.push({ kind: 'router-match-to-resolve', note: 'router.match(loc) to router.resolve(loc)' })
+        return
       }
     },
     NewExpression(p) {
@@ -373,12 +424,16 @@ function migrateRouterModule(code, filename) {
     })
   }
 
-  // currentRoute is a Ref in v4
-  if (routerBindings.size) {
+  // currentRoute is a Ref in v4. Rewrite when file has vue-router / createRouter /
+  // known router bindings (covers probe.value.currentRoute — G012).
+  const rewriteCurrentRoute =
+    routerBindings.size > 0 || needed.has('createRouter') || !!routerImport
+  if (rewriteCurrentRoute) {
     traverse(ast, {
       MemberExpression(p) {
         if (!t.isIdentifier(p.node.property, { name: 'currentRoute' }) || p.node.computed) return
-        if (!t.isIdentifier(p.node.object) || !routerBindings.has(p.node.object.name)) return
+        const obj = p.node.object
+        if (!(t.isIdentifier(obj) || t.isMemberExpression(obj))) return
         const parent = p.parentPath
         if (parent.isMemberExpression() && t.isIdentifier(parent.node.property, { name: 'value' })) return
         if (parent.isAssignmentExpression() && parent.node.left === p.node) return
@@ -423,6 +478,54 @@ function calleeRootName(callee) {
   let o = callee.object
   while (t.isMemberExpression(o)) o = o.object
   return t.isIdentifier(o) ? o.name : null
+}
+
+/**
+ * Heuristic: rewrite .match(...) only when it looks like Vue Router 3's router.match,
+ * not String.prototype.match.
+ */
+function looksLikeRouterMatch(path, routerBindings) {
+  const callee = path.node.callee
+  const root = calleeRootName(callee)
+  if (root && routerBindings.has(root)) return true
+  // probe.value.match('/home') / router.match({ path: '...' })
+  const arg0 = path.node.arguments[0]
+  if (!arg0) return false
+  if (t.isStringLiteral(arg0) && /^\//.test(arg0.value)) return true
+  if (t.isObjectExpression(arg0)) {
+    const keys = arg0.properties
+      .filter((pr) => t.isObjectProperty(pr) && !pr.computed)
+      .map((pr) => (t.isIdentifier(pr.key) ? pr.key.name : t.isStringLiteral(pr.key) ? pr.key.value : null))
+    if (keys.some((k) => k === 'path' || k === 'name' || k === 'params' || k === 'query')) return true
+  }
+  // typeof x.match === 'function' ? x.match(...) — parent ConditionalExpression
+  const parent = path.parentPath
+  if (parent && parent.isConditionalExpression() && parent.node.consequent === path.node) {
+    return true
+  }
+  return false
+}
+
+/** typeof <obj>.match === 'function' (or ==) */
+function isTypeofMatchFunctionTest(test, matchObject) {
+  if (!t.isBinaryExpression(test) || (test.operator !== '===' && test.operator !== '==')) return false
+  let typeofNode = null
+  let lit = null
+  if (t.isUnaryExpression(test.left, { operator: 'typeof' }) && t.isStringLiteral(test.right)) {
+    typeofNode = test.left
+    lit = test.right
+  } else if (t.isUnaryExpression(test.right, { operator: 'typeof' }) && t.isStringLiteral(test.left)) {
+    typeofNode = test.right
+    lit = test.left
+  }
+  if (!typeofNode || !lit || lit.value !== 'function') return false
+  const arg = typeofNode.argument
+  if (!t.isMemberExpression(arg) || arg.computed || !t.isIdentifier(arg.property, { name: 'match' })) return false
+  return nodesLooseEqual(arg.object, matchObject)
+}
+
+function nodesLooseEqual(a, b) {
+  return t.isNodesEquivalent(a, b)
 }
 
 function dropUnusedVueDefault(ast, changes) {

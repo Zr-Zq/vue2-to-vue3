@@ -29,6 +29,8 @@ AI がコメントを逐項処理します。スクリプト側はセマンテ�
 - `>>>` `/deep/` `::v-deep` to `:deep()`
 - `Vue.config.productionTip` / `silent` 代入の削除
 - `<template functional>` / `functional: true` to 通常コンポーネント（`$props`/`$attrs`、`listeners` 削除）
+- **Element UI → Element Plus**（プラグイン `element`、`mode: migrate`）：`size` `medium`→`default` / `mini`→`small`；`el-button type="text"`→`text`；`el-link :underline`→`always|never`；日付 `format`/`value-format` fecha→dayjs（`yyyy`→`YYYY` など）；dialog/drawer `custom-class`→`class`；**`el-dialog` / `el-drawer` の `:visible.sync` / `v-model:visible`→`v-model`**；`el-submenu`→`el-sub-menu`；静的 `icon`/`prefix-icon`/`suffix-icon`/`<i class="el-icon-*">`→PascalCase（`@element-plus/icons-vue` をグローバル登録）；`.el-input__inner` の枠／背景／影を `.el-input__wrapper` へ移し inner を無効化；`element-ui` のパッケージ／ビルド済み CSS／locale **lang**→`element-plus`。**AI のまま：** 動的 `:icon`／残りの `el-icon-*`、`Vue.use(ElementUI)`→`createApp().use(ElementPlus)`、SCSS `theme-chalk` / `$--color-*` 再構築、`Locale.use`→`el-config-provider :locale`（`lib/locale` ルートや `packages/theme-chalk` を盲目置換しない）
+- **ベース側のパス改名**（`util`→`utils`、axios を `@/api/…` へ）：AI が `.v23/path-remap.md` + `path-remap.json` を記入；スクリプト `v23-apply-path-remap` / `--step path-remap` は `ingest-files.txt` **のみ**書き換え（`path-remap.md` 参照）
 
 ---
 
@@ -37,7 +39,7 @@ AI がコメントを逐項処理します。スクリプト側はセマンテ�
    **別タグ上**：対応不要（登録しない）。
 
 2. **`$parent` / `$children` / `$root` などインスタンスツリー API** (`instance-api`)  
-   実行時ツリー依存——**`$parent` / `$children` / `$root` は AI 担当**（スクリプトは残して AI-TODO）。`$listeners` / `$scopedSlots` / `$on`/`$off`/`$once` はスクリプト処理済み。
+   `$parent` / `$root` は setup で取った proxy 経由。**`$children`**：テンプレにコンポーネント `ref=` があれば `[ref.value, …].filter(Boolean)` へ；なければ **AI**（AI-TODO）。`$listeners` / `$scopedSlots` / `$on`/`$off`/`$once` はスクリプト処理済み。
 
 3. **子コンポーネントによる props 変更（間接 / 別名）** (`props-mutation`)  
    直接代入は検出可能；分割代入、別名、透過後の変更は漏れることがある。
@@ -72,7 +74,7 @@ AI がコメントを逐項処理します。スクリプト側はセマンテ�
 
 8. **Options to Composition の残り** (`options-to-composition`)  
    **Options API のまま保持（変換しない）：** **import の** mixin または **`options.extends`** を持つコンポーネント — 1 ファイル内で平坦化できず、Vue3 も `mixins`/`extends` をサポートするため、AI-TODO `kept Options API (…)` のみ付与し、AI が書き換えるべき Vue2 専用インスタンス API（`$createElement`、`$vnode`、`$destroy`、`$children`、`_uid` …）を列挙。  
-   なお AI（ラップアップ）：**`options.model`**、上記の Options 保持コンポーネント（Options のままか composable 化）、**`$children`**（Vue3 削除 to template ref）、子の **`$destroy`**、**`this.$options.methods`/`computed`/…**（script setup では空 to ローカル束縛を使う）、素の `.js`/`.ts` Options。ラップアップ後は **AI-TODO 表記を削除**。  
+   なお AI（ラップアップ）：**`options.model`**、上記の Options 保持コンポーネント（Options のままか composable 化）、**`$children`**（対応するコンポーネント ref が無いとき）、子の **`$destroy`**、裸の **`this.$options.methods` バッグ**（`this.$options.methods.foo` はローカル関数へ書き換え済み）、素の `.js`/`.ts` Options。ラップアップ後は **AI-TODO 表記を削除**。  
    **確定パス済み：** `this.$el` / 裸 `$refs` / `$parent` / `$root` / `$options` / `$forceUpdate` to `__v23Proxy?.…`、`$vnode` / `$destroy` to `__v23Proxy?.$.…`（proxy は setup で取得するためメソッド内でも安全）；`$ssrContext` to setup で取得した `useSSRContext()`（SSR ビルドのみ）；`data()` prelude/短縮/`this.prop` to IIFE/`props.*`；ローカル `components` を `defineOptions.components` へインライン（文字列 `:is`）；`defineExpose`。  
    **data の `this._xxx`：** `_xxx` が `data()` キーなら他 data 同様 ref 化（+ AI-TODO：Vue2 はアンダースコアをインスタンスにプロキシしない）。data 以外のカスタムフィールド（例 `this._timer = …`）to インスタンスごとのプレーンオブジェクト `__v23Self._xxx`（非リアクティブ、Vue2 と同じ）。Vue 内部 `_uid` などは `this._*` のまま。
 
@@ -91,7 +93,7 @@ AI がコメントを逐項処理します。スクリプト側はセマンテ�
 | 親 `$refs` から子メソッド | `defineExpose` methods/data/computed | 選択的 expose 方針 |
 | `filters` と `methods` 同名 | method を残し、filter は `__v23Filter_<name>` としてマージ；mustache / `v-bind` の呼び出しを書き換え（Vue2 の filter はそこだけ）。イベントは method のまま | グローバル `Vue.filter`；スクリプトの `this.$options.filters` |
 | 非同期 `() => import()` / loading·error·delay オブジェクト | to `defineAsyncComponent`（フィールド対応）；既に `defineAsyncComponent` 内の factory は再ラップしない | 独自 Promise loader（`import` 以外）；スプレッド / 未知キーを含むオプションオブジェクトはそのまま（損失のある書き換えをしない）；ルートレコードの `component: () => import()` は素の loader のまま |
-| Vue Router 3（`router` プラグイン、既定 `migrate`） | モジュール：`createRouter`+history、catch-all、`scrollBehavior` x/y/selector→left/top/el **および**アサーション（`xy-shape`→`lte-shape`、`sample.x\|y\|selector`）、`addRoutes`/`onReady`/`currentRoute.value`；Options→setup 後は `$route`/`$router` と `const self = this`+`self.foo` もスクリプト | `getMatchedComponents` / `router.match`（AI-TODO）；ガードは可能なら `return`；**keep-options**；probe router は `shallowRef`（G013） |
+| Vue Router 3（`router` プラグイン、既定 `migrate`） | モジュール：`createRouter`+history、catch-all、`scrollBehavior` x/y/selector→left/top/el **および**アサーション（`xy-shape`→`lte-shape`、`sample.x\|y\|selector`）、`addRoutes`/`onReady`/`currentRoute.value`（`probe.value.currentRoute` 含む）、`match`→`resolve`、`getMatchedComponents()`→`currentRoute.value.matched`；Options→setup 後は `$route`/`$router` と `const self = this`+`self.foo` もスクリプト | ガードは可能なら `return`；**keep-options**；probe router は `shallowRef`（G013） |
 | 連結 / テンプレート文字列パスの動的 `import()` | `import('@/views/' + n + '.vue')` to `import.meta.glob('<相対ディレクトリ>/**/*.vue')` + キー参照（無い場合は webpack 同様に reject） | 拡張子サフィックスなし、ベアパッケージ接頭辞、完全に動的なパス |
 | ソース上の既存 TS 注釈 | `ref<T>` / `defineProps` / メソッド署名へ搬送 | 注釈が無いのにジェネリクスや PropType を発明 |
 | `ingest` コピー | スタイル/アセット（scss/css/画像/フォント…）もコピー；import 書き換えで `.vue` 拡張子を保持 | env / 工程設定（AI ベース） |

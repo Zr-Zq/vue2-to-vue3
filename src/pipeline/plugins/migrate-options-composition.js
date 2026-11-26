@@ -12,6 +12,71 @@ function renamesFromChanges(changes) {
   return renames
 }
 
+/** Map template ref="from" → ref="to" when data/method collided with $refs name. */
+function tplRefRenamesFromChanges(changes) {
+  const renames = Object.create(null)
+  ;(changes || []).forEach((c) => {
+    if (c && c.kind === 'tpl-ref-rename' && c.from && c.to) renames[c.from] = c.to
+  })
+  return renames
+}
+
+/** All ref="name" in template (script setup needs matching const name = ref()). */
+function collectTemplateRefNames(tpl) {
+  const names = []
+  const seen = Object.create(null)
+  const re = /\bref\s*=\s*(["'])([^"'\s]+)\1/g
+  const src = String(tpl || '')
+  let m
+  while ((m = re.exec(src))) {
+    const n = m[2]
+    if (!n || seen[n]) continue
+    seen[n] = true
+    names.push(n)
+  }
+  return names
+}
+
+/**
+ * ref= on component-like tags (kebab-case or PascalCase) — used to rewrite $children.
+ * Native tags (div/input/…) are excluded.
+ */
+function collectComponentTemplateRefs(tpl) {
+  const names = []
+  const seen = Object.create(null)
+  const re = /<([A-Za-z][\w-]*)\b([^>]*)\/?>/g
+  const src = String(tpl || '')
+  let m
+  while ((m = re.exec(src))) {
+    const tag = m[1]
+    const attrs = m[2] || ''
+    const isComp = tag.indexOf('-') !== -1 || /^[A-Z]/.test(tag)
+    if (!isComp) continue
+    const rm = /\bref\s*=\s*(["'])([^"'\s]+)\1/.exec(attrs)
+    if (!rm) continue
+    const n = rm[2]
+    if (!n || seen[n]) continue
+    seen[n] = true
+    names.push(n)
+  }
+  return names
+}
+
+function rewriteTemplateRefAttrs(tpl, renames) {
+  let code = String(tpl || '')
+  const changes = []
+  Object.keys(renames).forEach((from) => {
+    const to = renames[from]
+    const re = new RegExp('(\\sref\\s*=\\s*)([\"\'])' + from.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\2', 'g')
+    const next = code.replace(re, (m, pre, q) => {
+      changes.push({ kind: 'tpl-ref-attr', from: from, to: to })
+      return pre + q + to + q
+    })
+    code = next
+  })
+  return { code: code, changes: changes }
+}
+
 /**
  * Options API to <script setup> (no defineComponent).
  * $parent/$children/$root to AI-TODO only (not rewritten).
@@ -94,13 +159,19 @@ module.exports = createPlugin({
       return
     }
 
-    const run = (js, meta) => {
-      if (meta && meta.setup) return { code: js, changes: [] }
-      return migrateOptionsToComposition(js, { filename: ctx.file.path })
-    }
-
     const before = decomposeVue(ctx.file.content, ctx.file.absPath)
     const scriptPart = (before.jsParts || []).find((p) => !p.setup)
+    const tplCode = before.template && before.template.code != null ? before.template.code : ''
+    const templateRefNames = collectTemplateRefNames(tplCode)
+    const componentTemplateRefs = collectComponentTemplateRefs(tplCode)
+    const run = (js, meta) => {
+      if (meta && meta.setup) return { code: js, changes: [] }
+      return migrateOptionsToComposition(js, {
+        filename: ctx.file.path,
+        templateRefNames,
+        componentTemplateRefs,
+      })
+    }
     const result = applySfcTransforms(ctx.file.content, ctx.file.absPath, null, run)
     if (result.changes.some((c) => c.kind === 'keep-options')) {
       if (result.content !== ctx.file.content) {
@@ -119,6 +190,13 @@ module.exports = createPlugin({
       if (Object.keys(renames).length) {
         const tpl = applySfcTransforms(content, ctx.file.absPath, (t) =>
           rewriteFilterCallAliases(t, renames)
+        )
+        content = tpl.content
+      }
+      const tplRefRenames = tplRefRenamesFromChanges(result.changes)
+      if (Object.keys(tplRefRenames).length) {
+        const tpl = applySfcTransforms(content, ctx.file.absPath, (t) =>
+          rewriteTemplateRefAttrs(t, tplRefRenames)
         )
         content = tpl.content
       }

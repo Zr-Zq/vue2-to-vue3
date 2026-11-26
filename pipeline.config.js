@@ -16,7 +16,7 @@ module.exports = {
     { name: 'typescript', enabled: true, options: { mode: 'detect' } },
     { name: 'vuex', enabled: true, options: { mode: 'detect' } },
     { name: 'router', enabled: true, options: { mode: 'detect' } },
-    { name: 'element', enabled: true, options: { mode: 'detect' } },
+    { name: 'element', enabled: true, options: { mode: 'migrate' } },
     // Hot-plug example (off by default):
     // { use: './examples/plugins/hello-plugin.js', enabled: true, options: { mode: 'detect' } },
   ],

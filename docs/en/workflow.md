@@ -18,11 +18,13 @@
 3. copy        Script: from/src to to/src; also copy root sidecars (script/test/style/mock…)
                · If a same-named file already exists at the target to back up to to/.v23/backup/<timestamp>/ then overwrite
                · Rewrite imports to match the base alias (env/project config already prepared by AI)
-4. pipeline    Script: deterministic syntax transforms (sync/native/slot/render/mount/…)
+4. pipeline    Script: deterministic syntax transforms (sync/native/slot/render/mount/Element UI→Plus/…)
+               · Element: size/type=text/underline/date-format/dialog v-model/imports; icons & Vue.use still AI-TODO
                · Unsafe items get AI-TODO; **no env / project-config migration**
-5. 【pause】   AI: fix items listed in to/.v23/ai-todos.md one by one
+5. 【pause】   AI: fix ai-todos.md; if base renamed dirs (util→utils, axios path…), fill path-remap.md + path-remap.json
+               then `--step path-remap` (ingested files only — see ./path-remap.md)
 6. check       Script: v23-check-refs (missing local refs) + v23-check-syntax (JSON / JS / Vue script)
-7. next round  After pass, optionally re-run pipeline / build for acceptance
+7. next round  After pass, optionally re-run pipeline / path-remap / build for acceptance
 ```
 
 ## Commands
@@ -34,11 +36,30 @@ node 2to3/bin/migrate.js --from D:/old-app --src src --to D:/new-app
 # Analyze the source only
 node 2to3/bin/migrate.js --from D:/old-app --to D:/new-app --step analyze
 
+# After AI fills .v23/path-remap.json (layout diffs)
+node 2to3/bin/migrate.js --to D:/new-app --step path-remap
+
 # After AI finishes AI-TODO items
 node 2to3/bin/migrate.js --to D:/new-app --step check
 
 # Run another script migration round
 node 2to3/bin/migrate.js --to D:/new-app --step pipeline
+```
+
+## Repo fixtures (sources)
+
+| Path | Role |
+|------|------|
+| `2.pure-vue-app` | Options → Composition + vue-router fixtures (`--from`) |
+| `1.pure-vue-app` | Legacy template only; not the real Vue3 base |
+| `my-vue-app` | Mixed Vue2 fixtures (do not delete files) |
+| `element-ui-docs` | Full clone of ElemeFE/element **docs/examples** site (browse every official demo). Local notes: `element-ui-docs/README.local.md` (Node **16**, dart-sass patch). Not a typical migratable app layout — use for UI coverage testing, not as `--to`. |
+| `element-ui-demo` | Optional Vue2 + element-ui app with `@`/`src` + migration probes (if present) for `--from`. **`--to` must still be AI Vite + Vue3 + Element Plus**. |
+
+Example (when `element-ui-demo` exists):
+
+```bash
+node 2to3/bin/migrate.js --from element-ui-demo --src src --to output/element-ui-demo-migrate
 ```
 
 ## Division of labor
@@ -59,6 +80,8 @@ node 2to3/bin/migrate.js --to D:/new-app --step pipeline
 | `risks.json` / `html-risks.json` | Risk details |
 | `missing-refs-for-ai.md` | Missing-ref confirmation list |
 | `syntax-issues.json` / `syntax-issues-for-ai.md` | JSON and script syntax issues |
+| `path-remap.md` / `path-remap.json` | AI layout diffs; applied by `--step path-remap` on `ingest-files.txt` only |
+| `ingest-files.txt` | Files written by this copy (check-refs / path-remap scope) |
 
 ## Required reading for AI
 
@@ -70,3 +93,4 @@ AI agents use **this English set only** (`docs/en/`). Do not use `docs/zh` or `d
 - `./missing-refs-format.md` — Missing-ref JSON
 - `./syntax-check-format.md` — JSON / binding / script syntax check
 - `./cannot-fully-auto.md` — Items that cannot be fully automated
+- `./path-remap.md` — AI path layout diffs + scoped import rewrite

@@ -40,6 +40,7 @@ AI 建底座必须达到下列程度，不能只剩空壳：
 - **默认用 Vite + Vue 3** 建底座（`create-vue` / 手写 `vite.config` 均可）。
 - **不要默认再用 webpack / vue-cli**，除非用户明确要求，或源项目强依赖短期只能在 webpack 预览。
 - 推荐依赖方向：`vue@3`、`vue-router@4`、按需 `pinia` 或 `vuex@4`、UI 按源项目选型（如 Element Plus）。
+- 当 `--from` 为 `element-ui-demo`（或任意 `element-ui` 源）时：底座必须用 **Element Plus**，注册方式对齐源的 `Vue.use(ElementUI)`。脚本插件 `element`（`mode: migrate`）已改写 size / `type="text"` / 日期 format / 包路径 / `el-submenu`→`el-sub-menu`；AI 仍负责 **图标**（`@element-plus/icons-vue`）、**`createApp().use(ElementPlus)`** 接线、SCSS 主题重建，以及 **`Locale.use`→ConfigProvider locale**。
 - 入口：`index.html` + `src/main.js`（或 `.ts`），`resolve.alias['@'] to src`。
 - **环境变量**：对照源 `.env*`，由 AI 写成 `VITE_*`；业务代码读 `import.meta.env`（不要等脚本改）。
 - **装依赖**：AI 自己跑包管理器安装，不要把「依赖以后再说」留给脚本或用户。
@@ -204,3 +205,4 @@ ignoreWarnings: [
 9. [ ] 未误删源项目文件
 10. [ ] 未把 webpack 多 style 误报当成迁移失败
 11. [ ] （建议）写下 `.v23/scaffold-notes.md` 记录配置、CDN、旁路、非默认 dest-src
+12. [ ] 若底座相对源改了目录/文件位置（`util`→`utils`、axios 路径等），填 `.v23/path-remap.md` + `path-remap.json` 并跑 `--step path-remap`（见 `path-remap.md`；只动 `ingest-files.txt`）

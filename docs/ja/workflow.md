@@ -18,11 +18,13 @@
 3. copy        スクリプト：from/src to to/src；ルート級サイドカー（script/test/style/mock…）もコピー
                · 移行先に同名ファイルがある to 先に to/.v23/backup/<タイムスタンプ>/ へバックアップしてから上書き
                · ベースの alias に合わせて import を書き換え（env/工程設定は AI が準備済み）
-4. pipeline    スクリプト：確定的な構文移行（sync/native/slot/render/mount/…）
+4. pipeline    スクリプト：確定的な構文移行（sync/native/slot/render/mount/Element UI→Plus/…）
+               · Element：size / type=text / underline / 日付 format / dialog v-model / パッケージパス；アイコンと Vue.use は AI-TODO
                · 安定して直せないものは AI-TODO；**環境変数・工程設定は移行しない**
-5. 【一時停止】 AI：to/.v23/ai-todos.md に従い逐項修正
+5. 【一時停止】 AI：ai-todos.md を修正；ベースがディレクトリ名を変えた場合（util→utils、axios パスなど）は
+               path-remap.md + path-remap.json を記入し `--step path-remap`（取り込みファイルのみ — path-remap.md）
 6. check       スクリプト：v23-check-refs（ローカル参照の欠落）+ v23-check-syntax（JSON / JS / Vue script の構文）
-7. 次ラウンド   通過後、必要なら再度 pipeline / build で受け入れ確認
+7. 次ラウンド   通過後、必要なら再度 pipeline / path-remap / build で受け入れ確認
 ```
 
 ## コマンド
@@ -34,11 +36,30 @@ node 2to3/bin/migrate.js --from D:/old-app --src src --to D:/new-app
 # ソースの分析のみ
 node 2to3/bin/migrate.js --from D:/old-app --to D:/new-app --step analyze
 
+# AI が .v23/path-remap.json（レイアウト差分）を埋めたあと
+node 2to3/bin/migrate.js --to D:/new-app --step path-remap
+
 # AI が AI-TODO を直したあと
 node 2to3/bin/migrate.js --to D:/new-app --step check
 
 # スクリプト移行をもう一周
 node 2to3/bin/migrate.js --to D:/new-app --step pipeline
+```
+
+## リポジトリ用フィクスチャ（移行元）
+
+| パス | 役割 |
+|------|------|
+| `2.pure-vue-app` | Options→Composition + vue-router フィクスチャ（`--from`） |
+| `1.pure-vue-app` | 旧テンプレの控えのみ；正式な Vue3 ベースにしない |
+| `my-vue-app` | 混合 Vue2 フィクスチャ（ファイル削除禁止） |
+| `element-ui-docs` | ElemeFE/element **公式ドキュメント**のフルクローン（全公式デモを閲覧）。ローカル手順は `element-ui-docs/README.local.md`（Node **16**、dart-sass パッチ）。通常の移行元レイアウトではない——UI 網羅テスト用。`--to` にしない。 |
+| `element-ui-demo` | 任意：Vue2 + element-ui、`@`/`src` + 移行プローブ（あれば）を `--from` に。**`--to` は AI が Vite + Vue3 + Element Plus**。 |
+
+例（`element-ui-demo` がある場合）：
+
+```bash
+node 2to3/bin/migrate.js --from element-ui-demo --src src --to output/element-ui-demo-migrate
 ```
 
 ## 役割分担
@@ -59,6 +80,8 @@ node 2to3/bin/migrate.js --to D:/new-app --step pipeline
 | `risks.json` / `html-risks.json` | リスク詳細 |
 | `missing-refs-for-ai.md` | 欠落参照の確認リスト |
 | `syntax-issues.json` / `syntax-issues-for-ai.md` | JSON とスクリプト構文の問題 |
+| `path-remap.md` / `path-remap.json` | AI レイアウト差分；`--step path-remap` は `ingest-files.txt` のみ |
+| `ingest-files.txt` | 今回の copy が書いたファイル（check-refs / path-remap の範囲） |
 
 ## AI 必読
 
@@ -70,3 +93,4 @@ node 2to3/bin/migrate.js --to D:/new-app --step pipeline
 - `../en/missing-refs-format.md` — 欠落参照 JSON
 - `../en/syntax-check-format.md` — JSON / 宣言 / スクリプト構文チェック
 - `../en/cannot-fully-auto.md` — 完全自動できない項目
+- `../en/path-remap.md` — パスレイアウト差分と範囲限定の import 書き換え

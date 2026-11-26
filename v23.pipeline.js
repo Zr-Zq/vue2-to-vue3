@@ -11,6 +11,6 @@ module.exports = {
     { name: 'typescript' },
     { name: 'vuex' },
     { name: 'router' },
-    { name: 'element' },
+    { name: 'element', options: { mode: 'migrate' } },
   ],
 }

@@ -12,6 +12,7 @@
     "v23-todos": "./bin/todos.js",
     "v23-check-refs": "./bin/check-refs.js",
     "v23-check-syntax": "./bin/check-syntax.js",
+    "v23-apply-path-remap": "./bin/apply-path-remap.js",
     "v23-migrate": "./bin/migrate.js"
   },
   "scripts": {
@@ -44,9 +45,11 @@
     "test:ingest-rewrite": "node ./test/ingest-rewrite.test.js",
     "test:options-plain-js": "node ./test/options-plain-js.test.js",
     "test:router": "node ./test/router.test.js",
+    "test:element-plus": "node ./test/element-plus.test.js",
+    "test:path-remap": "node ./test/path-remap.test.js",
     "test:dynamic-import": "node ./test/dynamic-import.test.js",
     "test:no-inplace-write": "node ./test/no-inplace-write.test.js",
-    "test:auto": "npm run test:html-migrate && npm run test:extend-mount && npm run test:syntax && npm run test:render && npm run test:api-compat && npm run test:functional && npm run test:handoff && npm run test:options-composition && npm run test:instance-events && npm run test:async-component && npm run test:typescript-carry && npm run test:ingest-rewrite && npm run test:options-plain-js && npm run test:router && npm run test:dynamic-import && npm run test:no-inplace-write",
+    "test:auto": "npm run test:html-migrate && npm run test:extend-mount && npm run test:syntax && npm run test:render && npm run test:api-compat && npm run test:functional && npm run test:handoff && npm run test:options-composition && npm run test:instance-events && npm run test:async-component && npm run test:typescript-carry && npm run test:ingest-rewrite && npm run test:options-plain-js && npm run test:router && npm run test:element-plus && npm run test:path-remap && npm run test:dynamic-import && npm run test:no-inplace-write",
     "test:stress": "node ./test/auto-migrate.stress.js --rounds 12 --synth 120",
     "test:stress:heavy": "node ./test/auto-migrate.stress.js --rounds 20 --synth 300",
     "test:stress:functional": "node ./test/functional.stress.js --rounds 15 --synth 150",

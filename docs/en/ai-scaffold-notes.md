@@ -40,6 +40,7 @@ If the source used non-`src` roots, mirror that with matching `--dest-src` and d
 - **Default to Vite + Vue 3** for the base (`create-vue` or a hand-written `vite.config` are both fine).
 - **Do not default to webpack / vue-cli** unless the user explicitly asks, or the source strongly depends on webpack for a short-term preview.
 - Recommended dependency direction: `vue@3`, `vue-router@4`, `pinia` or `vuex@4` as needed, UI chosen to match the source (e.g. Element Plus).
+- When `--from` is `element-ui-demo` (or any app on `element-ui`): base must use **Element Plus**, and register globally/on-demand like source `Vue.use(ElementUI)`. Script plugin `element` (`mode: migrate`) already rewrites size / `type="text"` / date formats / package imports / `el-submenu`→`el-sub-menu`; AI still owns **icons** (`@element-plus/icons-vue`), **`createApp().use(ElementPlus)`** wiring, SCSS theme rebuild, and **`Locale.use`→ConfigProvider locale**.
 - Entry: `index.html` + `src/main.js` (or `.ts`), `resolve.alias['@'] to src`.
 - **Env vars**: AI maps source `.env*` to `VITE_*` and code to `import.meta.env` (do not wait for scripts).
 - **Install**: run the package manager install yourself; do not leave “deps TBD” for scripts or the user.
@@ -204,3 +205,4 @@ After scaffolding, confirm (all required unless noted):
 9. [ ] No accidental deletion of source project files
 10. [ ] Webpack multi-style false positives not treated as migration failure
 11. [ ] (Recommended) Write `.v23/scaffold-notes.md` covering config, CDN, sidecar, and any non-default dest-src
+12. [ ] If the base renamed/moved dirs vs source (`util`→`utils`, axios path, …), fill `.v23/path-remap.md` + `path-remap.json` and run `--step path-remap` (see `path-remap.md`; scoped to `ingest-files.txt` only)

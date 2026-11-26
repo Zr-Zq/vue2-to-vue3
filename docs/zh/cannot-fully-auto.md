@@ -30,6 +30,8 @@
 - `>>>` `/deep/` `::v-deep` to `:deep()`
 - 删除 `Vue.config.productionTip` / `silent` 赋值
 - `<template functional>` / `functional: true` to 普通组件（`$props`/`$attrs`，去 `listeners`）
+- **Element UI → Element Plus**（插件 `element`，`mode: migrate`）：`size` `medium`→`default` / `mini`→`small`；`el-button type="text"`→`text`；`el-link :underline`→`always|never`；日期 `format`/`value-format` fecha→dayjs（`yyyy`→`YYYY` 等）；dialog/drawer `custom-class`→`class`；**`el-dialog` / `el-drawer` 的 `:visible.sync` / `v-model:visible`→`v-model`**；`el-submenu`→`el-sub-menu`；静态 `icon`/`prefix-icon`/`suffix-icon`/`<i class="el-icon-*">`→PascalCase（需全局注册 `@element-plus/icons-vue`）；CSS 把 `.el-input__inner` 上的边框/背景/阴影迁到 `.el-input__wrapper` 并去掉 inner 边框；`element-ui` 包/预构建 CSS/locale **lang** 路径→`element-plus`。**仍交 AI：** 动态 `:icon` / 残留 `el-icon-*`、`Vue.use(ElementUI)`→`createApp().use(ElementPlus)`、SCSS `theme-chalk` / `$--color-*` 重建、`Locale.use`→`el-config-provider :locale`（不要盲改 `lib/locale` 根或 `packages/theme-chalk`）
+- **底座布局路径改名**（`util`→`utils`、axios 挪到 `@/api/…`）：AI 填 `.v23/path-remap.md` + `path-remap.json`；脚本 `v23-apply-path-remap` / `--step path-remap` **只**改 `ingest-files.txt` 里的文件（见 `path-remap.md`）
 
 ---
 
@@ -38,7 +40,7 @@
    **不在同一标签上**：无需处理（不登记）。
 
 2. **`$parent` / `$children` / `$root` 等实例树 API** (`instance-api`)  
-   依赖运行时组件树——**`$parent` / `$children` / `$root` 归 AI**（脚本保留并打 AI-TODO）。`$listeners` / `$scopedSlots` / `$on`/`$off`/`$once` 已脚本处理。
+   `$parent` / `$root` 经 setup 捕获的 proxy 桥接。**`$children`**：模板里有组件 `ref=` 时，脚本改成 `[ref.value, …].filter(Boolean)`；否则 **归 AI**（打 AI-TODO）。`$listeners` / `$scopedSlots` / `$on`/`$off`/`$once` 已脚本处理。
 
 3. **子组件修改 props（间接/别名）** (`props-mutation`)  
    直接赋值可检；解构、别名、透传后再改会漏。
@@ -73,7 +75,7 @@
 
 8. **Options to Composition 剩余项** (`options-to-composition`)  
    **保留 Options API（不转换）：** 含 **import 的** mixin 或 **`options.extends`** 的组件——脚本无法在单文件内展平，而 Vue3 仍支持 `mixins`/`extends`；只加 AI-TODO `kept Options API (…)`，并列出仍在使用、需 AI 改写的 Vue2 专有实例 API（`$createElement`、`$vnode`、`$destroy`、`$children`、`_uid` …）。  
-   仍归 AI（收尾）：**`options.model`**、上述保留 Options 的组件（维持 Options 或改成 composable）、**`$children`**（Vue3 已移除 to 模板 ref）、子组件 **`$destroy`**、**`this.$options.methods`/`computed`/…**（script setup 下为空 to 改用本地绑定）、普通 `.js`/`.ts` Options to 需要宏时再迁入 `.vue`。收尾完成后**删掉 AI-TODO 字样**。  
+   仍归 AI（收尾）：**`options.model`**、上述保留 Options 的组件（维持 Options 或改成 composable）、**`$children`**（模板没有可映射的组件 ref 时）、子组件 **`$destroy`**、裸读 **`this.$options.methods` 整袋**（`this.$options.methods.foo` 已改成本地函数）、普通 `.js`/`.ts` Options to 需要宏时再迁入 `.vue`。收尾完成后**删掉 AI-TODO 字样**。  
    **现已确定路径：** `this.$el` / 裸 `$refs` / `$parent` / `$root` / `$options` / `$forceUpdate` to `__v23Proxy?.…`，`$vnode` / `$destroy` to `__v23Proxy?.$.…`（proxy 在 setup 中捕获，方法里调用也安全）；`$ssrContext` to setup 中捕获的 `useSSRContext()`（仅 SSR 构建）；`data()` prelude/简写/`this.prop` to IIFE/`props.*`；本地 `components` 内联进 `defineOptions.components`（字符串 `:is`）；`defineExpose` 供父级 `$refs`。  
    **data 的 `this._xxx`：** 若 `_xxx` 是 `data()` 字段，脚本按普通 data 改写成 ref（+ AI-TODO：Vue2 不会把下划线字段代理到实例）。非 data 的自定义字段（如 `this._timer = …`）to 组件实例内的普通对象 `__v23Self._xxx`（非响应式，与 Vue2 一致）。Vue 内部 `_uid` 等仍保留 `this._*`。
 
@@ -92,7 +94,7 @@
 | 父级 `$refs` 调子方法 | `defineExpose` methods/data/computed | 选择性 expose 策略 |
 | `filters` 与 `methods` 同名 | 保留 method；filter 并入为 `__v23Filter_<name>`；改写 mustache / `v-bind` 调用（Vue2 filter 只出现在这两处）。事件里仍用 method | 全局 `Vue.filter`；脚本里 `this.$options.filters` |
 | 异步 `() => import()` / loading·error·delay 对象 | to `defineAsyncComponent`（含字段映射）；已在 `defineAsyncComponent` 内的 factory 不再二次包裹 | 自定义 Promise loader（非 `import`）；含展开 / 未知字段的选项对象保持原样（不做有损改写）；路由记录的 `component: () => import()` 保持普通 loader |
-| Vue Router 3（`router` 插件，默认 `migrate`） | 模块（`.js` **与** `.vue` script）：`createRouter`+history、catch-all、`scrollBehavior` x/y/selector→left/top/el **及**常见断言（`xy-shape`→`lte-shape`、`sample.x\|y\|selector`）、`addRoutes`/`onReady`/`currentRoute.value`；Options→setup 后 `$route`/`$router`→composables，且展开 `const self = this` + `self.foo` | `getMatchedComponents` / `router.match`（AI-TODO）；改守卫时优先 `return` 代替 `next`；**keep-options**；探测用 router 用 `shallowRef`（G013） |
+| Vue Router 3（`router` 插件，默认 `migrate`） | 模块（`.js` **与** `.vue` script）：`createRouter`+history、catch-all、`scrollBehavior` x/y/selector→left/top/el **及**常见断言（`xy-shape`→`lte-shape`、`sample.x\|y\|selector`）、`addRoutes`/`onReady`/`currentRoute.value`（含 `probe.value.currentRoute`）、`match`→`resolve`、`getMatchedComponents()`→`currentRoute.value.matched`；Options→setup 后 `$route`/`$router`→composables，且展开 `const self = this` + `self.foo` | 改守卫时优先 `return` 代替 `next`；**keep-options**；探测用 router 用 `shallowRef`（G013） |
 | 拼接 / 模板字符串路径的动态 `import()` | `import('@/views/' + n + '.vue')` to `import.meta.glob('<相对目录>/**/*.vue')` + 按 key 取（缺失时像 webpack 一样 reject） | 无扩展名后缀、裸包前缀、完全动态路径 |
 | 源码里已有的 TS 注解 | 搬进 `ref<T>` / `defineProps` / 方法签名 | 无注解时发明泛型或 PropType |
 | `ingest` 拷贝 | 同时拷贝样式/资源（scss/css/图片/字体…）；改写 import 时保留 `.vue` 后缀 | env / 工程配置（AI 底座） |

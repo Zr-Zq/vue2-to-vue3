@@ -23,7 +23,8 @@
  * - $data to v23Data; $props to props
  * - $createElement to h; $vnode / $forceUpdate / $destroy to __v23Proxy bridge (safe in methods);
  *   $ssrContext to setup-captured useSSRContext() (SSR builds only)
- * - this.$options.methods/computed/… to AI-TODO (gone in script setup)
+ * - this.$options.methods.foo / computed.foo → local setup binding (gone on $options in script setup)
+ * - this.$children → [compRef.value, …].filter(Boolean) when template component refs are known
  * - $children left AI (removed in Vue3)
  * - this._xxx in data() to ref like other data (+ AI-TODO); custom fields to __v23Self._xxx;
  *   Vue-internal _uid etc. left
@@ -56,8 +57,8 @@ const BABEL_PLUGINS = [
   'dynamicImport',
 ]
 
-/** $children removed in Vue3 — leave this.$children for AI. $parent/$root bridged via proxy. */
-const AI_PARENT = new Set(['$children'])
+/** Reserved set for instance APIs that must not be rewritten via the generic this.x path. */
+const AI_PARENT = new Set()
 
 const OFFICIAL_DOLLAR = {
   $emit: { kind: 'emit' },
@@ -579,6 +580,19 @@ function methodFunctionNode(prop) {
   if (t.isObjectProperty(prop) && (t.isFunctionExpression(prop.value) || t.isArrowFunctionExpression(prop.value))) {
     return prop.value
   }
+  // methods: { setBrand } shorthand / identifier — wrap as passthrough so rename+defineExpose stay valid
+  if (t.isObjectProperty(prop) && t.isIdentifier(prop.value)) {
+    const src = prop.value.name
+    return t.functionExpression(
+      null,
+      [t.restElement(t.identifier('args'))],
+      t.blockStatement([
+        t.returnStatement(
+          t.callExpression(t.identifier(src), [t.spreadElement(t.identifier('args'))])
+        ),
+      ])
+    )
+  }
   return null
 }
 
@@ -792,6 +806,7 @@ function rewriteThisInFunction(fnNode, ctx) {
     templateRefs,
     borrowed,
     nameMap,
+    refsMap,
     /** When true (provide()), data/computed this.x to ref binding x (not x.value) */
     preferRefBinding,
     refsBagId,
@@ -811,10 +826,41 @@ function rewriteThisInFunction(fnNode, ctx) {
         !path.node.computed
       ) {
         const refName = path.node.property.name
-        const mapped = nameMap[refName] || refName
+        const mapped = (refsMap && refsMap[refName]) || nameMap[refName] || refName
         path.replaceWith(t.memberExpression(t.identifier(mapped), t.identifier('value')))
         path.skip()
         return
+      }
+
+      // this.$options.methods.foo / this.$options.computed.foo → local setup binding
+      // (script setup no longer puts these bags on $options; AI-TODO alone left runtime broken)
+      if (
+        t.isMemberExpression(path.node.object) &&
+        t.isMemberExpression(path.node.object.object) &&
+        t.isThisExpression(path.node.object.object.object) &&
+        t.isIdentifier(path.node.object.object.property, { name: '$options' }) &&
+        t.isIdentifier(path.node.object.property) &&
+        !path.node.object.computed &&
+        t.isIdentifier(path.node.property) &&
+        !path.node.computed
+      ) {
+        const bag = path.node.object.property.name
+        const member = path.node.property.name
+        if (bag === 'methods' && methodNames && methodNames.has(member)) {
+          path.replaceWith(t.identifier(nameMap[member] || member))
+          path.skip()
+          return
+        }
+        if (bag === 'computed' && computedNames && computedNames.has(member)) {
+          const id = nameMap[member] || member
+          path.replaceWith(
+            preferRefBinding
+              ? t.identifier(id)
+              : t.memberExpression(t.identifier(id), t.identifier('value'))
+          )
+          path.skip()
+          return
+        }
       }
 
       if (!t.isThisExpression(path.node.object)) return
@@ -836,8 +882,25 @@ function rewriteThisInFunction(fnNode, ctx) {
       if (AI_PARENT.has(key)) return
 
       // Bridge via setup-captured proxy (methods lose `this` in script setup).
-      // $children removed in Vue3 — leave for AI. $parent/$root/$options/$el/$refs still on proxy.
-      if (key === '$children') return
+      // $children: prefer known component template refs; else leave for AI.
+      if (key === '$children') {
+        const compRefs = (ctx && ctx.componentTemplateRefs) || []
+        if (compRefs.length) {
+          const els = compRefs.map((r) => {
+            const id = (refsMap && refsMap[r]) || nameMap[r] || r
+            return t.memberExpression(t.identifier(id), t.identifier('value'))
+          })
+          path.replaceWith(
+            t.callExpression(
+              t.memberExpression(t.arrayExpression(els), t.identifier('filter')),
+              [t.identifier('Boolean')]
+            )
+          )
+          path.skip()
+          return
+        }
+        return
+      }
       if (key === '$el' || key === '$refs' || key === '$options' || key === '$parent' || key === '$root') {
         const proxyId = (ctx && ctx.proxyId) || '__v23Proxy'
         path.replaceWith(
@@ -967,10 +1030,11 @@ function rewriteThisInFunction(fnNode, ctx) {
         return
       }
       if (templateRefs.has(key)) {
+        const refId = (refsMap && refsMap[key]) || mapped
         path.replaceWith(
           preferRefBinding
-            ? t.identifier(mapped)
-            : t.memberExpression(t.identifier(mapped), t.identifier('value'))
+            ? t.identifier(refId)
+            : t.memberExpression(t.identifier(refId), t.identifier('value'))
         )
         path.skip()
       }
@@ -1031,7 +1095,14 @@ function scanSpecialThisUsage(ast) {
           t.isIdentifier(parent.property) &&
           OPTIONS_GONE_IN_SETUP.has(parent.property.name)
         ) {
-          usage.optionsGone.add(parent.property.name)
+          // this.$options.methods.foo is rewritten to local foo — only flag bare bag reads
+          const grand = path.parentPath.parentPath && path.parentPath.parentPath.node
+          const furtherMember =
+            t.isMemberExpression(grand) &&
+            grand.object === parent &&
+            !grand.computed &&
+            t.isIdentifier(grand.property)
+          if (!furtherMember) usage.optionsGone.add(parent.property.name)
         }
       } else if (key === '$parent') usage.parent = true
       else if (key === '$root') usage.root = true
@@ -1395,6 +1466,19 @@ function migrateOptionsToComposition(code, opts) {
     specialUsage.forceUpdate ||
     specialUsage.destroy
   )
+  // Template ref names from HTML (ref="kid") — emit even without this.$refs.kid in script.
+  const htmlTemplateRefs = new Set(
+    ((opts && opts.templateRefNames) || []).filter((n) => typeof n === 'string' && n)
+  )
+  const componentTemplateRefs = (
+    (opts && opts.componentTemplateRefs) ||
+    []
+  ).filter((n) => typeof n === 'string' && n)
+  htmlTemplateRefs.forEach((n) => templateRefs.add(n))
+  componentTemplateRefs.forEach((n) => templateRefs.add(n))
+
+  // Filled after template-ref emission; rewriteThis reads it for this.$refs.x
+  const refsMap = Object.create(null)
   const rewriteCtxBase = {
     dataNames,
     computedNames,
@@ -1403,6 +1487,8 @@ function migrateOptionsToComposition(code, opts) {
     injectNames,
     templateRefs,
     nameMap,
+    refsMap,
+    componentTemplateRefs,
     refsBagId,
     rootElId,
     dataBagId,
@@ -1528,18 +1614,31 @@ function migrateOptionsToComposition(code, opts) {
     })
   })
 
+  // Template refs: when name collides with data/method/computed, emit a distinct
+  // binding (formRef) and record tpl-ref-rename so the plugin can rewrite ref="form".
+  // Otherwise script-setup `ref="form"` would overwrite the data ref on mount.
   templateRefs.forEach((r) => {
-    if (dataNames.has(r) || methodNames.has(r) || computedNames.has(r) || injectNames.has(r)) return
-    const id = nameMap[r] || uniqueName(r, used)
-    nameMap[r] = id
+    const collides =
+      dataNames.has(r) || methodNames.has(r) || computedNames.has(r) || injectNames.has(r)
+    let id
+    if (collides) {
+      id = uniqueName(r + 'Ref', used)
+      refsMap[r] = id
+      changes.push({ kind: 'tpl-ref-rename', from: r, to: id })
+    } else {
+      id = nameMap[r] || uniqueName(r, used)
+      nameMap[r] = id
+      refsMap[r] = id
+      pushReturn(r, id)
+    }
     vueImports.add('ref')
     setupStmts.push(
       t.variableDeclaration('const', [
         t.variableDeclarator(t.identifier(id), t.callExpression(t.identifier('ref'), [t.nullLiteral()])),
       ])
     )
-    pushReturn(r, id)
   })
+  // Prefer refsMap when rewriting this.$refs.x (see rewriteCtxBase.refsMap)
 
   // this.$el / bare this.$refs to __v23Proxy bridge (+ AI note: prefer explicit template refs)
   if (specialUsage.el) {
@@ -1605,7 +1704,7 @@ function migrateOptionsToComposition(code, opts) {
   if (specialUsage.root) {
     changes.push({ kind: 'this-$root-proxy', note: 'this.$root to __v23Proxy?.$root' })
   }
-  if (specialUsage.children) {
+  if (specialUsage.children && !(componentTemplateRefs && componentTemplateRefs.length)) {
     changes.push({
       kind: 'ai-this-$children',
       note: 'this.$children removed in Vue3 — AI must use template refs / provide',
@@ -2131,10 +2230,16 @@ function migrateOptionsToComposition(code, opts) {
       out
   }
   // Bridged $el / bare $refs / $parent / $root / $options — no AI-TODO (deterministic proxy).
-  if (specialUsage.children) {
+  // $children: AI-TODO only when we could not map component template refs.
+  if (specialUsage.children && !(componentTemplateRefs && componentTemplateRefs.length)) {
     out =
       '/* AI-TODO: [options-to-composition] this.$children removed in Vue3 — use template refs or provide/inject */\n' +
       out
+  } else if (specialUsage.children && componentTemplateRefs.length) {
+    changes.push({
+      kind: 'this-$children-refs',
+      refs: componentTemplateRefs.slice(),
+    })
   }
   if (specialUsage.destroy) {
     out =
@@ -2187,7 +2292,8 @@ function migrateOptionsToComposition(code, opts) {
       out
     changes.push({ kind: 'ai-data-underscore', names: dataUnderscoreUnique })
   }
-  if (/\$children\b/.test(codeStr)) {
+  // Final source may still mention $children in comments; only flag leftover runtime access.
+  if (/this\s*\.\s*\$children\b/.test(out) || /\b__v23Proxy\?\.\$children\b/.test(out)) {
     out =
       '/* AI-TODO: [instance-api] this.$children removed in Vue3 — use template refs or provide/inject */\n' +
       out

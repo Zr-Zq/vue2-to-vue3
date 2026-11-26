@@ -31,6 +31,7 @@ const {
   sidecarCopyIgnoreGlobs,
 } = require('../src/sidecar-dirs')
 const { ensureBackupBatch, backupIfExists } = require('../src/backup')
+const { ensureRemapStub, applyPathRemap } = require('../src/apply-path-remap')
 
 const BIN = __dirname
 
@@ -39,7 +40,8 @@ function printHelp() {
 
 Workflow:
   Analyze source to (AI builds base) to copy (backup then overwrite) to pipeline auto-fix + AI-TODO
-  to [PAUSE] AI edits markers to check-refs + check-syntax to may re-run pipeline
+  to [PAUSE] AI edits markers (+ path-remap if layout drifted) to check-refs + check-syntax
+  to may re-run pipeline / path-remap
 
 Required:
   --from <dir>          Vue2 source project root
@@ -48,7 +50,7 @@ Required:
 Options:
   --src <rel>           Source dir relative to --from (default src)
   --dest-src <rel>      Target dir relative to --to (default same as --src)
-  --step <name>         analyze|scaffold|copy|pipeline|todos|check|script|all
+  --step <name>         analyze|scaffold|copy|pipeline|todos|path-remap|check|script|all
                         default script (analyze+copy+pipeline+todos)
   --scaffold            (discouraged) Copy legacy template if target has no project; prefer AI Vue3 base
   --force-scaffold      Force overwrite-copy of the template base (use with care)
@@ -61,6 +63,8 @@ Examples:
   # After AI created a Vite+Vue3 base (incl. env) at --to:
   v23-migrate --from D:/old-app --src src --to D:/new-app
   v23-migrate --from D:/old-app --to D:/new-app --step analyze
+  # After AI fills .v23/path-remap.json (layout diffs util→utils, axios path, …):
+  v23-migrate --to D:/new-app --step path-remap
   # After AI finishes AI-TODO items (missing refs + JSON/JS syntax):
   v23-migrate --to D:/new-app --step check
   v23-migrate --to D:/new-app --step pipeline
@@ -240,7 +244,29 @@ function stepCopy(args) {
     ),
     'utf8'
   )
+  // Stub for AI layout diffs (util→utils, axios path moves, …); apply via --step path-remap
+  const stub = ensureRemapStub(args.to)
+  if (stub.created.length) {
+    console.log('Path-remap stub:', stub.jsonPath)
+    console.log('  Fill after comparing source vs base layout, then: --step path-remap')
+  }
   return result
+}
+
+function stepPathRemap(toRoot) {
+  console.log('\n=== Path remap (ingested files only) ===')
+  const report = applyPathRemap({ baseRoot: toRoot })
+  if (!report.ok) {
+    throw new Error(report.error || 'path-remap failed')
+  }
+  if (report.skipped) {
+    console.log('Skipped:', report.reason)
+    console.log('Edit', path.join(projectWorkDir(toRoot), 'path-remap.json'), 'then re-run')
+    return report
+  }
+  console.log('Changed files:', report.changedCount, '/', report.scopedFileCount, 'scoped')
+  if (report.reportPath) console.log('Report:', report.reportPath)
+  return report
 }
 
 function stepPipeline(toRoot) {
@@ -261,11 +287,17 @@ function stepTodos(toRoot) {
   console.log('  ', path.join(REPO_ROOT, '2to3/docs/en/html-format.md'))
   console.log('  ', path.join(REPO_ROOT, '2to3/docs/en/cannot-fully-auto.md'))
   console.log('  ', path.join(REPO_ROOT, '2to3/docs/en/ai-scaffold-notes.md'))
+  console.log('  ', path.join(REPO_ROOT, '2to3/docs/en/path-remap.md'))
   const reportMd = path.join(projectWorkDir(toRoot), 'migration-report.md')
   if (fs.existsSync(reportMd)) {
     console.log('Ownership table (AI vs script vs compat):')
     console.log('  ', reportMd)
   }
+  const remapMd = path.join(projectWorkDir(toRoot), 'path-remap.md')
+  const remapJson = path.join(projectWorkDir(toRoot), 'path-remap.json')
+  console.log('If base layout renamed dirs (util→utils, axios path, …):')
+  console.log('  fill', fs.existsSync(remapMd) ? remapMd : remapJson)
+  console.log('  then: node', path.join(BIN, 'migrate.js'), '--to', toRoot, '--step path-remap')
   console.log('After AI finishes:')
   console.log('  node', path.join(BIN, 'migrate.js'), '--to', toRoot, '--step check')
   console.log('For another script migration round:')
@@ -339,6 +371,8 @@ async function main() {
       stepTodos(args.to)
     } else if (step === 'check') {
       stepCheck(args.to)
+    } else if (step === 'path-remap') {
+      stepPathRemap(args.to)
     } else if (step === 'script' || step === 'all') {
       stepAnalyze(args.from)
       // Only scaffold when explicitly requested; otherwise wait for AI Vue3 base

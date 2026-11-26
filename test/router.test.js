@@ -164,4 +164,35 @@ console.log('== async-component skips route record loaders ==')
   ok(/C: defineAsyncComponent/.test(r.code), 'non-route factory still wrapped')
 }
 
+console.log('== match / getMatchedComponents / probe.currentRoute (G012) ==')
+{
+  const r = migrateRouterModule(`
+    import { createRouter, createMemoryHistory } from 'vue-router'
+    const probe = createRouter({ history: createMemoryHistory(), routes: [] })
+    const matched = typeof probe.match === 'function' ? probe.match('/home') : null
+    const comps = probe.getMatchedComponents()
+    console.log(probe.currentRoute.path, probe.value && probe.currentRoute.name)
+  `)
+  const c = r.code
+  ok(/probe\.resolve\(['"]\/home['"]\)/.test(c), 'typeof match ? match : null → resolve')
+  ok(!/\.match\s*\(/.test(c), 'no leftover .match(')
+  ok(/probe\.currentRoute\.value\.matched/.test(c), 'getMatchedComponents → currentRoute.value.matched')
+  ok(/probe\.currentRoute\.value\.path/.test(c), 'probe.currentRoute → .value')
+  ok(!/AI-TODO.*getMatchedComponents|AI-TODO.*router\.match/.test(c), 'no AI-TODO for match/getMatched')
+}
+
+console.log('== probe.value.currentRoute + match path arg ==')
+{
+  const r = migrateRouterModule(`
+    import { createRouter, createMemoryHistory } from 'vue-router'
+    const probe = { value: null }
+    probe.value = createRouter({ history: createMemoryHistory(), routes: [] })
+    const path = probe.value.currentRoute.path
+    const m = probe.value.match('/lazy')
+    export default path
+  `)
+  ok(/probe\.value\.currentRoute\.value\.path/.test(r.code), 'probe.value.currentRoute → .value')
+  ok(/probe\.value\.resolve\(['"]\/lazy['"]\)/.test(r.code), 'probe.value.match(path) → resolve')
+}
+
 console.log('\nrouter tests passed')

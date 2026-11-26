@@ -40,6 +40,7 @@ AI は空シェルで止めず、次までやり切ること：
 - **デフォルトは Vite + Vue 3** でベースを作る（`create-vue` / 手書き `vite.config` いずれも可）。
 - **webpack / vue-cli をデフォルトにしない**。ユーザーが明示した場合、またはソースが短期プレビューで webpack に強く依存する場合のみ。
 - 推奨依存の方向：`vue@3`、`vue-router@4`、必要に応じて `pinia` または `vuex@4`、UI はソースに合わせる（例：Element Plus）。
+- `--from` が `element-ui-demo`（または `element-ui` 利用アプリ）のとき：ベースは **Element Plus**、登録はソースの `Vue.use(ElementUI)` に揃える。スクリプト `element`（`mode: migrate`）が size / `type="text"` / 日付 format / パッケージパス / `el-submenu`→`el-sub-menu` を書き換え済み；AI は **アイコン**（`@element-plus/icons-vue`）、**`createApp().use(ElementPlus)`**、SCSS テーマ再構築、**`Locale.use`→ConfigProvider locale** を担当。
 - 入口：`index.html` + `src/main.js`（または `.ts`）、`resolve.alias['@'] to src`。
 - **環境変数**：ソースの `.env*` を AI が `VITE_*` に揃え、コードは `import.meta.env`（スクリプト待ちにしない）。
 - **インストール**：AI 自身がパッケージマネージャで入れる。「依存は後で」をスクリプトやユーザーに残さない。
@@ -204,3 +205,4 @@ ignoreWarnings: [
 9. [ ] ソースプロジェクトのファイルを誤削除していない
 10. [ ] webpack の複数 style 誤検知を移行失敗と扱っていない
 11. [ ] （推奨）`.v23/scaffold-notes.md` に設定・CDN・サイドカー・非既定 dest-src を記録
+12. [ ] ベースがソースとパスを変えた場合（`util`→`utils`、axios など）は `.v23/path-remap.md` + `path-remap.json` を埋め `--step path-remap`（`path-remap.md`；`ingest-files.txt` のみ）
